@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2022 Australian Research Data Commons
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+from django.utils.translation import ugettext_lazy as _
 
-from django.core.management import execute_from_command_line  # noqa
+import horizon
 
-if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE",
-                          "openstack_dashboard.settings")
-    execute_from_command_line(sys.argv)
+
+class Reservations(horizon.Panel):
+    name = _("Reservations")
+    slug = 'reservations'
+    permissions = ('openstack.services.nectar-reservation',)

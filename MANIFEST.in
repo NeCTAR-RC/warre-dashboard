@@ -1,3 +1,4 @@
 include setup.py
 
 recursive-include warre_dashboard *.js *.html *.scss
+recursive-include warre_dashboard/local_settings.d/ *

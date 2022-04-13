@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2022 Australian Research Data Commons
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+# The slug of the panel to be added to HORIZON_CONFIG. Required.
+PANEL = 'reservation'
+# The slug of the dashboard the PANEL is associated with. Required.
+PANEL_DASHBOARD = 'project'
+# The slug of the panel group the PANEL is associated with.
+PANEL_GROUP = 'compute'
 
-from django.core.management import execute_from_command_line  # noqa
+# Python panel class of the PANEL to be added.
+ADD_PANEL = ('warre_dashboard.content.reservation.panel.Reservations')
 
-if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE",
-                          "openstack_dashboard.settings")
-    execute_from_command_line(sys.argv)
+ADD_INSTALLED_APPS = ['warre_dashboard', 'warre_dashboard.content.reservation']

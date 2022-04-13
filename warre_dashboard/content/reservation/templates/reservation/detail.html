@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load i18n sizeformat %}
+
+{% block title %}{% trans "Project Details" %}{% endblock %}
+
+{% block page_header %}
+  {% include "horizon/common/_detail_header.html" %}
+{% endblock %}
+
+{% block main %}
+<div class="row">
+  <div class="col-sm-12">
+    <div class="detail">
+      <dl class="dl-horizontal">
+	<dt>ID</dt>
+	<dd>{{ reservation.id }}</dd>
+	<dt>Start</dt>
+	<dd>{{ reservation.start }}</dd>
+	<dt>End</dt>
+	<dd>{{ reservation.end }}</dd>
+	<dt>Status</dt>
+	<dd>{{ reservation.status }}</dd>
+	<dt>Status Reason</dt>
+	<dd>{{ reservation.status_reason|default_if_none:"" }}</dd>
+	<dt>Instance Count</dt>
+	<dd>{{ reservation.instance_count }}</dd>
+      </dl>
+
+      <h4>Specs</h4>
+      <hr class="header_rule">
+      <dl class="dl-horizontal">
+	<dt>{% trans "Flavor Name" %}</dt>
+	<dd class="word-wrap">{{ reservation.flavor.name }}</dd>
+	<dt>{% trans "Description" %}</dt>
+	<dd>{{ reservation.flavor.description }}</dd>
+	<dt>{% trans "RAM" %}</dt>
+	<dd>{{ reservation.flavor.memory_mb|mb_float_format }}</dd>
+	<dt>{% trans "VCPUs" %}</dt>
+	<dd>{{ reservation.flavor.vcpu }} {% trans "VCPU" %}</dd>
+	<dt>{% trans "Disk" %}</dt>
+	<dd>{{ reservation.flavor.disk_gb }}{% trans "GB" %}</dd>
+	<dt>Max reservation length</dt>
+	<dd>{{ reservation.flavor.max_length_hours }} hours</dd>
+	<dt>Public</dt>
+	<dd>{{ reservation.flavor.is_public }}</dd>
+	<dt></dt>
+	<dd></dd>
+      </dl>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

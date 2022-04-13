@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2022 Australian Research Data Commons
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+import horizon
+from openstack_dashboard.test import helpers as test
 
-from django.core.management import execute_from_command_line  # noqa
+from warre_dashboard.content.reservation import \
+    panel as reservation_panel
 
-if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE",
-                          "openstack_dashboard.settings")
-    execute_from_command_line(sys.argv)
+
+class TestWarreDashboard(test.TestCase):
+
+    def test_registered(self):
+        project_dashboard = horizon.get_dashboard('project')
+
+        panel_1 = project_dashboard.get_panel('reservations')
+        self.assertEqual(reservation_panel.Reservations, panel_1.__class__)

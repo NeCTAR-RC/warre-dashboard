@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright 2022 Australian Research Data Commons
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+from django.conf import settings
 
-from django.core.management import execute_from_command_line  # noqa
 
-if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE",
-                          "openstack_dashboard.settings")
-    execute_from_command_line(sys.argv)
+settings.POLICY_FILES.update({
+    'reservation': 'warre_policy.yaml',
+})
