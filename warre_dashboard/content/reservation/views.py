@@ -35,6 +35,11 @@ class IndexView(tables.DataTableView):
     def get_data(self):
         return api.reservation_list(self.request)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['limits'] = api.limits(self.request)
+        return context
+
 
 class DetailView(views.HorizonTemplateView):
 
@@ -65,3 +70,8 @@ class CreateView(forms.ModalFormView):
     submit_url = reverse_lazy("horizon:project:reservations:create")
     success_url = reverse_lazy('horizon:project:reservations:index')
     page_title = "Create Reservation"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['limits'] = api.limits(self.request)
+        return context
