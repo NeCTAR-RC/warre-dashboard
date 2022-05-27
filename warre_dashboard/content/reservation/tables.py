@@ -21,6 +21,7 @@ from django.utils.text import format_lazy
 from django.utils.translation import pgettext_lazy
 from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import ungettext_lazy
+from horizon import messages
 from horizon import tables
 from horizon.templatetags import sizeformat
 from openstack_dashboard import policy
@@ -132,11 +133,26 @@ STATUS_DISPLAY_CHOICES = (
 )
 
 
+def get_reservation_error(reservation):
+    if reservation.status.lower() != 'error':
+        return None
+    message = reservation.status_reason
+    preamble = _('Failed to reserve flavor for reservation "%s", the '
+                 'reservation has an error status') % reservation.id
+    message = format_lazy('{preamble}: {message}',
+                          preamble=preamble, message=message)
+    return message
+
+
 class UpdateRow(tables.Row):
     ajax = True
 
     def get_data(self, request, reservation_id):
-        return api.reservation_get(request, reservation_id)
+        reservation = api.reservation_get(request, reservation_id)
+        error = get_reservation_error(reservation)
+        if error:
+            messages.error(request, error)
+        return reservation
 
 
 class ReservationTable(tables.DataTable):
