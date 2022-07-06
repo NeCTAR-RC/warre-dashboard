@@ -24,7 +24,6 @@ from warre_dashboard.api import reservation as api
 class CreateForm(forms.SelfHandlingForm):
     start = forms.DateTimeField()
     end = forms.DateTimeField()
-    instance_count = forms.IntegerField(min_value=1, initial=1)
     flavor = forms.ThemableChoiceField()
 
     def _populate_flavor_choices(self, request):
@@ -49,7 +48,7 @@ class CreateForm(forms.SelfHandlingForm):
                 request,
                 start=data['start'],
                 end=data['end'],
-                instance_count=data['instance_count'],
+                instance_count=1,
                 flavor_id=data['flavor'])
             message = 'Creating reservation "%s"' % reservation.id
             messages.info(request, message)
