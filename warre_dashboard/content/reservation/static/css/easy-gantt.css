@@ -1,0 +1,152 @@
+table.tb-gantt {
+    position: relative;
+    background-color: white;
+    margin-left:auto;
+    margin-right:auto;
+    font-size: 11px;
+    border-collapse: collapse;
+    display: block;
+    overflow-x: scroll;
+    max-height: 450px;
+    border-radius: .25rem;
+}
+
+table.tb-gantt thead th {
+    min-width: 20px;
+    height: 20px;
+    text-align: center;
+}
+table.tb-gantt > thead > tr > th {
+    border: none;
+}
+
+table.tb-gantt tbody .td-bg1 {
+    background: #f2f2f2;
+}
+
+table.tb-gantt thead .month-name-par {
+    background-color: #b6b6b6;
+    color: black;
+}
+
+table.tb-gantt thead .month-name-odd {
+    background-color: #cccccc;
+    color: black;
+}
+
+table.tb-gantt thead .days {
+    background-color: #212529;
+    color: white;
+    margin: auto;
+    padding: 0px;
+    text-align: center;
+}
+
+table.tb-gantt thead .days > p{
+    margin: auto;
+    height: 100%;
+    width: 100%;
+    padding: 3px 0px 0px 0px;
+    border-right: 1px solid dimgray;
+}
+
+table.tb-gantt tbody .td-tasks {
+    text-align: center;
+    color: black;
+    margin: 0px;
+    padding: 0px;
+}
+
+table.tb-gantt thead th:nth-child(1) {/*first cell in the header*/
+    min-width: 200px;
+}
+
+table.tb-gantt tbody tr th:nth-child(1) {  /*the first cell in each tr*/
+    min-height: 20px;
+    width: 200px;
+    background-color: #99dae7;
+    color: black;
+    font-weight: normal;
+    position: relative;
+    z-index: 1;
+}
+
+table.tb-gantt tbody tr th:nth-child(1) > p{
+    width:100%;
+    padding:0px;
+    text-align: left;
+}
+
+table.tb-gantt tbody tr th:nth-child(1) > p.h5 {
+    cursor: pointer;
+}
+
+table.tb-gantt tbody tr:last-child > th:first-child > p {
+    border-bottom: none;
+}
+
+table.tb-gantt tbody p[data-toggle="collapse"]:after {
+    font-family: FontAwesome;
+    content: "\f077";
+    margin-left: 6px;
+}
+
+table.tb-gantt tbody p.collapsed:after {
+    font-family: FontAwesome;
+    content: "\f078";
+    margin-left: 6px;
+}
+
+div.tooltip-gantt{
+    width:auto;
+    height:auto;
+    color:white;
+    background: rgba(0,0,0,0.8);
+    position:absolute;
+    z-index:10001;
+    padding:10px 10px 10px 10px;
+    border-radius: .25rem;
+}
+
+table.tb-gantt tbody .td-tasks > .div-task{
+	/* border-radius: .25rem; */
+    min-height: 20px;
+    margin: 0px;
+    padding: 0px;
+    position: relative;
+    overflow: hidden;
+}
+
+table.tb-gantt tbody .td-tasks > .border-radius-full{
+    border-radius: .25rem;
+}
+
+table.tb-gantt tbody .td-tasks > .border-radius-left{
+    border-radius: .25rem 0 0 .25rem;
+}
+
+table.tb-gantt tbody .td-tasks > .border-radius-right{
+    border-radius: 0 .25rem .25rem 0;
+}
+
+table.tb-gantt tbody .td-tasks > .div-task .show-hover{
+    background-color: #000000;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    border-radius: .25rem;
+}
+
+table.tb-gantt tbody .td-tasks > .div-task:hover .show-hover{
+    opacity: 0.3;
+}
+
+@media(max-width: 767px) {
+    table.tb-gantt tbody tr th:nth-child(1) {  /*the first cell in each tr*/
+        min-height: 15px;
+        min-width: 150px;
+    }
+}
