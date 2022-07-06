@@ -55,12 +55,17 @@ def reservation_delete(request, reservation_id):
     return warreclient(request).reservations.delete(reservation_id)
 
 
-def flavor_list(request):
-    return warreclient(request).flavors.list()
+def flavor_list(request, **kwargs):
+    return warreclient(request).flavors.list(**kwargs)
 
 
 def flavor_get(request, flavor_id):
     return warreclient(request).flavors.get(flavor_id)
+
+
+def flavor_free_slots(request, flavor_id, start=None, end=None):
+    return warreclient(request).flavors.free_slots(
+        flavor_id, start=start, end=end)
 
 
 def limits(request):
@@ -68,6 +73,10 @@ def limits(request):
 
     limits_dict = {}
     for limit in limits:
+        if limit.name == 'maxHours':
+            limits_dict['maxDays'] = int(limit.value / 24)
+        elif limit.name == 'totalHoursUsed':
+            limits_dict['totalDaysUsed'] = int(limit.value / 24)
         if limit.value < 0:
             limits_dict[limit.name] = float("inf")
         else:
