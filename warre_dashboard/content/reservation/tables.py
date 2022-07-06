@@ -67,7 +67,7 @@ class CreateReservation(tables.LinkAction):
     name = "create"
     verbose_name = _("Create Reservation")
     url = "horizon:project:reservations:create"
-    classes = ("ajax-modal", "btn-create")
+    classes = ("btn-create")
     icon = "plus"
     policy_rules = (("reservation", "warre:reservation:create"),)
     ajax = True
