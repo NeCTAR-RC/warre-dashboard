@@ -185,14 +185,31 @@ var reservationAvailabilty = (function() {
     } 
 
     $(".div-task").mousemove(function(e) {
-      var relX = e.pageX - $(this).offset().left;
+      var rel_x = e.pageX - $(this).offset().left;
       // var div_width = $(this).width();
       // var slot_available_days = Number($(this).parent().attr('task_days'));
       // var day_width = div_width / slot_available_days;
       // if(relX )
-      $(this).find(".show-hover").css({'left': relX});
-      getDatesFromTable($(this), relX);
+      showHover($(this), rel_x);
+      getDatesFromTable($(this), rel_x);
     });
+  }
+
+  function showHover(div_element, pixel_left_pos) {
+    var div_width = div_element.width();
+    var slot_available_days = Number(div_element.parent().attr('task_days'));
+    var day_width = div_width / slot_available_days;
+    var day_positions = []; // New array to store starting pixel x offsets for each day in the available time slot
+    day_positions[0] = 0;
+
+    for(var i = 1; i < (slot_available_days); i++) {
+      day_positions[i] = (day_positions[i-1] + day_width);
+    }
+
+    let hover_pos = day_positions.concat(pixel_left_pos).sort((a, b) => a - b).indexOf(pixel_left_pos);
+    let start_day_pos = hover_pos > 0 ? hover_pos - 1 : 0;
+
+    div_element.find(".show-hover").css({'left': day_positions[start_day_pos]});
   }
 
   function updateDateRange(start, end) {
