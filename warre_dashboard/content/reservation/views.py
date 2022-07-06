@@ -31,6 +31,7 @@ INDEX_URL = "horizon:project:reservations:index"
 class IndexView(tables.DataTableView):
     page_title = 'Reservations'
     table_class = reservation_tables.ReservationTable
+    template_name = 'reservation/index.html'
 
     def get_data(self):
         return api.reservation_list(self.request)
@@ -73,5 +74,13 @@ class CreateView(forms.ModalFormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['limits'] = api.limits(self.request)
+        limits = api.limits(self.request)
+        context['limits'] = limits
+        context['percentage_used'] = \
+            limits['totalHoursUsed'] / limits['maxHours'] * 100
+        flavors = api.flavor_list(self.request)
+        context['availability_zones'] = list(set(
+            [f.availability_zone for f in flavors if f.availability_zone]))
+        context['categories'] = list(set(
+            [f.category for f in flavors if f.category]))
         return context

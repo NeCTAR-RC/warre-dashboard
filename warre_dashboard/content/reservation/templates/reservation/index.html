@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Reservations" %}{% endblock %}
+
+{% block main %}
+<div class="block-title mb-2">
+  <h3>Reservations</h3>
+</div>
+<div class="row">
+  <div class="col-sm-12">
+    <p>You can reserve high performance resources (GPUs and large memory) on the Nectar cloud, up to the limits for your allocation. Your past and current reservations are listed below. To create a new reservation, select “create reservation”.</p>
+  </div>
+</div>
+{{ table.render }}
+<hr />
+<div class="row equal">
+  <div class="col-sx-12 col-sm-6 mb-3 justify-content-center align-items-center">
+    <div class="panel panel-info stats-panel shadow h-100">
+      <div class="panel-body d-flex align-items-middle">
+        <h2 class="reservation-stats-value mr-4">{{ limits.totalReservationsUsed }} <small>out of</small> {{ limits.maxReservations }}</h2>
+        <div class="reservation-stats-description">
+          <h4>reservations used</h4>
+          <h6>in your project allocation</h6>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sx-12 col-sm-6 mb-3">
+    <div class="panel panel-primary stats-panel shadow h-100">
+      <div class="panel-body d-flex align-items-middle">
+        <h2 class="reservation-stats-value mr-4">{{ limits.totalDaysUsed }} <small>out of</small> {{ limits.maxDays }}</h2>
+        <div class="reservation-stats-description">
+          <h4>days reserved</h4>
+          <h6>in your project allocation</h6>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
