@@ -27,29 +27,10 @@
       <p>To make a reservation, select an available time slot from the table below. You can customise the reservation start and end dates within the available time slot. Reservations must be a minimum of 24 hours.</p>
     </div>
     <div class="col-xs-12 col-md-6">
+      {% include "reservation/_reservation_limits.html" %}
       <div class="panel panel-default shadow">
-        <div class="panel-heading">Project Limits</div>
+        <div class="panel-heading">Usage Limit</div>
         <div class="panel-body">
-          <h3>Reservations</h3>
-          <table class="table table-bordered text-center">
-            <thead>
-              <tr>
-                <th class="col-md-3 text-center">Max Days</th>
-                <th class="col-md-3 text-center">Total Days Reserved</th>
-                <th class="col-md-3 text-center">Max Reservations</th>
-                <th class="col-md-3 text-center">Total Reservations Used</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>{{ limits.maxDays }}</td>
-                <td>{{ limits.totalDaysUsed }}</td>
-                <td>{{ limits.maxReservations }}</td>
-                <td>{{ limits.totalReservationsUsed }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <h3>Usage</h3>
           <div id="usage_stats">
             <p>You have used <strong><span id="su_used"></span>/<span id="su_budget"></span> Service Units</strong> in this project allocation period.</p>
           </div>

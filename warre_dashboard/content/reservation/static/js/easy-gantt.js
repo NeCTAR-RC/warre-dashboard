@@ -165,8 +165,8 @@ $.fn.gantt = function (options) {
             tdCell += `<td class="${classTd}" colspan="${qtdColspan}"></td>`;
         }
         if(type == 'task'){
-            let start = moment(task.date_start, "DD/MM/YYYY").format('DD/MM/YY');
-            let end = moment(task.date_end, "DD/MM/YYYY").format('DD/MM/YY');
+            let start = moment(task.date_start, "DD/MM/YYYY").format('DD/MM/YYYY');
+            let end = moment(task.date_end, "DD/MM/YYYY").format('DD/MM/YYYY');
             let tooltipDesc = (task.tooltip_desc)? task.tooltip_desc: '';
             tdCell +=   `<td class="${classTd} td-tasks" start="${start}" end="${end}" task_id="${task.id}" task_name="${taskName}" task_days="${originQtdColspan}" task_max_hours="${task.details.max_length_hours}" tooltip_desc="${tooltipDesc}" colspan="${qtdColspan}">
                             <div class="div-task ${borderRadius}" style="background-color: ${taskColor};">${labelT}<span class="show-hover"></span></div>

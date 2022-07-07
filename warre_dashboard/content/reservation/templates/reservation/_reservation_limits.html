@@ -1,0 +1,30 @@
+{% load i18n horizon %}
+
+{% spaceless %}
+<div class="panel panel-default shadow">
+  <div class="panel-heading">Reservation Limits</div>
+  <div class="panel-body">
+    <div class="row">
+      {% for section in charts %}
+        {% for chart in section.charts %}
+          <div class="d3_quota_bar col-xs-6">
+            <div class="pie-chart-usage" data-used="{% quotapercent chart.used chart.quota %}"></div>
+            <div class="quota_title" title="{{ chart.name }}" data-toggle="tooltip"> {{ chart.name }}</div>
+            <div class="quota_subtitle">
+              {% if chart.quota|quotainf != '-1' %}
+                {% blocktrans trimmed with usedphrase=chart.text used=chart.used_display available=chart.quota_display %}
+                  {{ usedphrase }} {{ used }} of {{ available }}
+                {% endblocktrans %}
+              {% else %}
+                {% blocktrans trimmed with usedphrase=chart.text used=chart.used_display %}
+                  {{ usedphrase }} {{ used }} (No Limit)
+                {% endblocktrans %}
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      {% endfor %} 
+    </div>
+  </div>
+</div>
+{% endspaceless %}
