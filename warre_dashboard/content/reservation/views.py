@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.contrib.humanize.templatetags import humanize as humanize_filters
 from django.urls import reverse
 from django.urls import reverse_lazy
+from django.utils.translation import pgettext_lazy
+from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
 from horizon import forms
 from horizon import tables
 from horizon.utils import memoized
 from horizon import views
+from openstack_dashboard.usage import quotas
+from openstack_dashboard.usage import views as usage_views
 
 from warre_dashboard.api import reservation as api
 from warre_dashboard.content.reservation import forms as reservation_forms
@@ -64,6 +69,43 @@ class DetailView(views.HorizonTemplateView):
         return reservation
 
 
+CHART_DEFS = [
+    {
+        'title': _("Reservations"),
+        'charts': [
+            usage_views.ChartDef("days", _("Days"), None, None),
+            usage_views.ChartDef("reservation", _("Reservations"), None, None),
+        ],
+    }
+]
+
+QUOTA_LIMIT_MAP = {
+    'reservation': {
+        'limit': 'maxReservations',
+        'usage': 'totalReservationsUsed'
+    },
+    'days': {
+        'limit': 'maxDays',
+        'usage': 'totalDaysUsed'
+    },
+}
+
+
+def get_quota_usages(request):
+    usages = quotas.QuotaUsage()
+    limits = api.limits(request)
+    for quota_name, limit_keys in QUOTA_LIMIT_MAP.items():
+        if limit_keys['usage']:
+            usage = limits[limit_keys['usage']]
+        else:
+            usage = None
+        quotas._add_limit_and_usage(usages, quota_name,
+                                    limits[limit_keys['limit']],
+                                    usage,
+                                    [])
+    return usages
+
+
 class CreateView(forms.ModalFormView):
     form_class = reservation_forms.CreateForm
     template_name = 'reservation/create.html'
@@ -83,4 +125,49 @@ class CreateView(forms.ModalFormView):
             [f.availability_zone for f in flavors if f.availability_zone]))
         context['categories'] = list(set(
             [f.category for f in flavors if f.category]))
+        context['charts'] = self._get_charts_data()
         return context
+
+    def _get_charts_data(self):
+        self.usage = get_quota_usages(self.request)
+        chart_sections = []
+        for section in CHART_DEFS:
+            chart_data = self._process_chart_section(section['charts'])
+            chart_sections.append({
+                'title': section['title'],
+                'charts': chart_data
+            })
+        return chart_sections
+
+    def _process_chart_section(self, chart_defs):
+        charts = []
+        for t in chart_defs:
+            key = t.quota_key
+            used = self.usage[key]['used']
+            quota = self.usage[key]['quota']
+            text = t.used_phrase
+            if text is None:
+                text = pgettext_lazy('Label in the limit summary', 'Used')
+
+            filters = t.filters
+            if filters is None:
+                filters = (humanize_filters.intcomma,)
+            used_display = usage_views._apply_filters(used, filters)
+            # When quota is float('inf'), we don't show quota
+            # so filtering is unnecessary.
+            quota_display = None
+            if quota != float('inf'):
+                quota_display = usage_views._apply_filters(quota, filters)
+            else:
+                quota_display = quota
+
+            charts.append({
+                'type': key,
+                'name': t.label,
+                'used': used,
+                'quota': quota,
+                'used_display': used_display,
+                'quota_display': quota_display,
+                'text': text
+            })
+        return charts
