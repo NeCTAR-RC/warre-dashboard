@@ -1,14 +1,13 @@
 var reservationAvailabilty = (function() {
 
-  var reservationSlots = {};
+  var reservations = {};
   var reservation_data = {};
-  // var reservations_table = {};
   var category = "";
   var availabilty_zone = "";
   // var max_hours;
   // var total_hours_used;
-  var max_reservations;
-  var total_reservations_used;
+  // var max_reservations;
+  // var total_reservations_used;
   var selected_usage_rate = 0;
   var max_days = 0;
   var total_days_used = 0;
@@ -27,7 +26,8 @@ var reservationAvailabilty = (function() {
   function convertToFloat(str_num) {
     return Math.round(Number(str_num) * 100) / 100;
   }
-  /* Private function to get reservation schedule data */
+
+  /* Private function to get reservation calendar data */
   function getReservationsData() {
     const data_start = moment().add(1, 'days').format('YYYY-MM-DD');
     const data_end = moment().add(3, 'months').format('YYYY-MM-DD');
@@ -135,7 +135,7 @@ var reservationAvailabilty = (function() {
       });
   }
 
-  /* Private function to get details of a time slot and return as html formatted string */
+  /* Private function to get details of a flavor and return as html formatted string */
   function getDetails(details) {
 
     var details_string = "<p>";
@@ -150,8 +150,8 @@ var reservationAvailabilty = (function() {
     return details_string;
   }
 
+  /* Private function to initialize bootstrap daterangepicker with selected dates */
   function showDateRange(slotStart, slotEnd) {
-    //maxEndDate = 
     $('input[name="daterange"]').daterangepicker({
       opens: 'left',
       startDate: selected_start,
@@ -168,40 +168,39 @@ var reservationAvailabilty = (function() {
     });
   }
 
+  /* Private function to show max days shaded hover block on time slot */
   function activateSlotMouseover() {
 
+    // Does the project have reservation days remaining?
     if(max_days_eligible) {
       $(".div-task").each(function() {
+        // Determine max days and set hover block width for each time slot
         selected_max_days = Math.floor(Number($(this).parent().attr('task_max_hours')) / 24);
         var hover_size = Math.min(max_days_eligible, selected_max_days); // The smaller number of days eligible to book for the flavor
         var slot_available_days = Number($(this).parent().attr('task_days'));
         if(hover_size < slot_available_days) {
           let slot_hover = $(this).find('.show-hover');
           let hover_width_percent = hover_size / slot_available_days * 100;
-          //console.log(hover_width_percent);
           slot_hover.css('width', hover_width_percent + "%");
         }
-        //console.log(hover_size);
       });
     } 
 
+    // Create mousemove event for each time slot div
     $(".div-task").mousemove(function(e) {
       var rel_x = e.pageX - $(this).offset().left;
-      // var div_width = $(this).width();
-      // var slot_available_days = Number($(this).parent().attr('task_days'));
-      // var day_width = div_width / slot_available_days;
-      // if(relX )
-      showHover($(this), rel_x);
-      getDatesFromTable($(this), rel_x);
+      showHover($(this), rel_x); // Show hover block on start date of the mouse location
+      getDatesFromTable($(this), rel_x); // Get the time slot hover dates to update tooltip and modal
     });
   }
 
+  /* Private function to show hover shadow at the x pixel offset of each day in table when mouse moves over the time slot div */
   function showHover(div_element, pixel_left_pos) {
     var div_width = div_element.width();
     var slot_available_days = Number(div_element.parent().attr('task_days'));
     var day_width = div_width / slot_available_days;
     var day_positions = []; // New array to store starting pixel x offsets for each day in the available time slot
-    day_positions[0] = 0;
+    day_positions[0] = 0; // Set first element to 0 (pixel offset)
 
     for(var i = 1; i < (slot_available_days); i++) {
       day_positions[i] = (day_positions[i-1] + day_width);
@@ -213,6 +212,7 @@ var reservationAvailabilty = (function() {
     div_element.find(".show-hover").css({'left': day_positions[start_day_pos]});
   }
 
+  /* Private function to update the selected dates with given dates */
   function updateDateRange(start, end) {
     selected_start = start.format("DD/MM/YYYY");
     selected_end = end.format("DD/MM/YYYY");
@@ -279,6 +279,7 @@ var reservationAvailabilty = (function() {
     }
   }
 
+  /* Private function to convert a flavor usage rate string to a number */
   function getSURate(usage_rate_string) {
     if(usage_rate_string == "FREE") {
       return 0;
@@ -320,6 +321,7 @@ var reservationAvailabilty = (function() {
     }
   }
 
+  /* Private function to show eligibilty to reserve selected days (was previously hours) */
   function calculateHours() {
     // var selected_hours = selected_days * 24;
 
@@ -355,6 +357,7 @@ var reservationAvailabilty = (function() {
     }
   }
 
+  /* Private function to show eligibilty to reserve the total service units for selected days */
   function calculateSU() {
     // var selected_hours = selected_days * 24;
     if(!selected_usage_rate) {
@@ -372,11 +375,7 @@ var reservationAvailabilty = (function() {
     var pending_percent = Math.round(selected_su / max_su * 100);
     var new_total = Math.round(selected_su + total_su_used);
     var new_percent = Math.ceil(new_total / max_su * 100);
-    // max_su = Number($("#modal_su_budget").text());
-    // console.log("new_total: " + new_total);
-    // console.log("max_su: " + max_su);
 
-    // console.log(selected_su);
     $("#modal_total_su").text(selected_su + " Service Units");
     $("#modal_total_su_used").text(new_total);
     // console.log("new_percent: " + new_percent);
@@ -402,9 +401,9 @@ var reservationAvailabilty = (function() {
       $("#usage_progressbar_pending").addClass("progress-bar-danger");
       return false; 
     }
-    
   }
 
+  /* Private function to get the project usage to date from api request */
   function getUsageTotal() {
     $.ajax({
       url: "/api/nectar/allocation/usage/",
@@ -428,13 +427,13 @@ var reservationAvailabilty = (function() {
     });
   }
 
+  /* Private function to get the project usage budget from api request */
   function getUsageBudget() {
     $.ajax({
       url: "/api/nectar/allocation/quota/rating.budget/",
       type: 'GET',
       async: false,
       success: function(data) {
-        // console.log(data);
         if(data) {
           console.log("Got budget! " + data);
           max_su = data;
@@ -461,60 +460,33 @@ var reservationAvailabilty = (function() {
   // }
 
   /* Public function to set reservation limits */
-  reservationSlots.setReservationLimits = function(project_max_days = 0, project_days_used = 0, project_max_reservations = 0, project_reservations_used = 0) {
-    // max_hours = project_max_hours;
+  reservations.setReservationLimits = function(project_max_days = 0, project_days_used = 0) {
     max_days = project_max_days;
     total_days_used = project_days_used;
-    // total_hours_used = project_hours_used;
-    max_reservations = project_max_reservations;
-    total_reservations_used = project_reservations_used;
-
-    // max_days = Math.floor(max_hours / 24);
-    // total_days_used = Math.floor(max_hours - total_hours_used / 24);
     max_days_eligible = max_days - total_days_used;
     // console.log("Days remaining: " + max_days_eligible);
   }
 
   /* Public function to get reservations */
-  reservationSlots.showSlots = function() {
+  reservations.showSlots = function() {
     category = $("input[type='radio'][name='flavor_category']:checked").val();
     availabilty_zone = $("#availabilty_zone option:selected").val();
     displayReservationsTable();
   }
 
-  reservationSlots.createReservation = function() {
-    // console.log(window.location.href);
-    // $.post(window.location.href, {start: selected_start, end: selected_end, flavor: selected_flavor}, function(data) {
-    //   console.log('Reservation Created. Server says: ' + data);
-    // }).fail(function(error) {
-    //   console.log(error);
-    // });
+  /* Public function to submit the create reservation form */
+  reservations.createReservation = function() {
     var form_id = "#reserve_form";
-    //$(form_id).attr('action', window.location.href);
     var start_time = moment(selected_start, 'DD/MM/YYYY').format('YYYY-MM-DD') + " 00:00";
     var end_time = moment(selected_end, 'DD/MM/YYYY').format('YYYY-MM-DD') + " 23:59";
     $(form_id + " input[name='start']").val(start_time);
     $(form_id + " input[name='end']").val(end_time);
     $(form_id + " input[name='flavor']").val(selected_flavor);
     $(form_id).submit();
-    // $(form_id).submit(function(e) {
-    //   e.preventDefault()
-    // });
-
-    // $.ajax({
-    //   url: window.location.href,
-    //   type: 'POST',
-    //   data: {start: moment(selected_start).format('YYYY-MM-DD'), end: moment(selected_end).format('YYYY-MM-DD'), flavor: selected_flavor},
-    //   success: function(result) {
-    //     console.log(result);
-    //   },
-    //   error: function(error) {
-    //     console.log(error);
-    //   }
-    // });
   }
 
-  reservationSlots.getUsageData = function() {
+  /* Public function to submit the create reservation form */
+  reservations.getUsageData = function() {
     let usage_total = getUsageTotal();
     let usage_budget = getUsageBudget();
     if(usage_total && usage_budget) {
@@ -523,5 +495,5 @@ var reservationAvailabilty = (function() {
   }
 
   // Return public functions
-  return reservationSlots;
+  return reservations;
 }());
