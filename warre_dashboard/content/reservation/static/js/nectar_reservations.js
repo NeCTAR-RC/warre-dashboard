@@ -158,6 +158,7 @@ var reservationAvailabilty = (function() {
       endDate: selected_end,
       minDate: slotStart,
       maxDate: slotEnd,
+      // parentEl: "#content_body",
       locale: {
         format: 'DD/MM/YYYY'
       }

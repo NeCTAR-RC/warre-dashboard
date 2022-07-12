@@ -1,7 +1,178 @@
 {% extends 'base.html' %}
 {% load i18n %}
+{% load static %}
 {% block title %}{% trans "Create Reservation" %}{% endblock %}
 
+{% block page_header %}
+  {% include "horizon/common/_page_header.html" with title=_("Create Reservation") %}
+{% endblock page_header %}
+
+{% block css %}
+  {% include "_stylesheets.html" %}
+  <link href="{% static 'css/easy-gantt.css' %}" type="text/css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-daterangepicker/3.0.5/daterangepicker.min.css" integrity="sha512-rBi1cGvEdd3NmSAQhPWId5Nd6QxE8To4ADjM2a6n0BrqQdisZ/RPUlm0YycDzvNL1HHAh1nKZqI0kSbif+5upQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+{% endblock %}
+
+{% block custom_head_js %}
+  {{ block.super }}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-daterangepicker/3.0.5/daterangepicker.min.js" integrity="sha512-mh+AjlD3nxImTUGisMpHXW03gE6F4WdQyvuFRkjecwuWLwD2yCijw4tKA3NsEFpA1C3neiKhGXPSIGSfCYPMlQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="{% static 'js/easy-gantt.js'%}"></script>
+  <script type="text/javascript" src="{% static 'js/nectar_reservations.js'%}"></script>
+{% endblock %}
+
 {% block main %}
-    {% include 'reservation/_create.html' %}
+<div id="create_reservation_page" class="mb-5">
+  <a href="{% url 'horizon:project:reservations:index' %}" class="btn btn-link"><i class="fa fa-arrow-left"></i> Back</a>
+  <div class="block-title mb-2">
+    <h3>Create Reservation</h3>
+    {{ form.errors }}
+    {{ form.non_field_errors }}
+  </div>
+  <div class="row">
+    <div class="col-xs-12 col-md-6">
+      <p>To make a reservation, select an available time slot from the table below. You can customise the reservation start and end dates within the available time slot. Reservations must be a minimum of 24 hours.</p>
+    </div>
+    <div class="col-xs-12 col-md-6">
+      {% include "reservation/_reservation_limits.html" %}
+      <div class="panel panel-default shadow">
+        <div class="panel-heading">Usage Limit</div>
+        <div class="panel-body">
+          <div id="usage_stats">
+            <p>You have used <strong><span id="su_used"></span>/<span id="su_budget"></span> Service Units</strong> in this project allocation period.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="panel panel-default shadow">
+        <div class="panel-heading">Select Flavor Availabilty</div>
+        <div class="panel-body">
+          <div class="d-md-flex align-items-center justify-content-between mb-4">
+            <div class="d-inline-block">
+              <form class="form-inline">
+                <label class="mr-3">Flavor Type</label>
+                <div id="flavor_type_filter" class="btn-group" data-toggle="buttons">
+                  <label class="btn btn-sm btn-default active">
+                    <input type="radio" name="flavor_category" id="flavor_category1" value="" checked> All
+                  </label>
+                  {% for category in categories %}
+                    <label class="btn btn-sm btn-default">
+                      <input type="radio" name="flavor_category" id="flavor_category{{ forloop.counter }}" value="{{ category }}"> {{ category }}
+                    </label>
+                  {% endfor %}
+                </div>
+              </form>
+            </div>
+            <div class="d-inline-block">
+              <form class="form-inline">
+                <label for="availabilty_zone" class="mr-3">Availability Zone</label>
+                <select id="availabilty_zone" class="form-control" name="availabilty_zone">
+                  <option value="" selected>All</option>
+		              {% for zone in availability_zones %}
+                    <option value="{{ zone }}">{{ zone }}</option>
+		              {% endfor %}
+                </select>
+              </form>
+            </div>
+          </div>
+          <div id="reservations_table"></div>
+          <div class="alert alert-warning text-center reservations-error">There are no available time slots for this selection.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="create_reservation_modal" class="modal modal-bordered" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title text-center">Reserve Time Slot</h4>
+      </div>
+      <div class="modal-body">
+        <h3 id="modal_flavor_title" class="text-center">Flavor Name</h3>
+        <div id="modal_flavor_details" class="text-center"><p>Details here...</p></div>
+        <div class="row">
+          <div class="col-sm-6">
+            <h5 class="text-uppercase text-secondary">Confirm Dates</h5>
+            <p>How long do you want to reserve?</p>
+            <input type="text" id="date_selector" class="form-control" name="daterange" />
+            <h4 id="modal_total_days"></h4>
+            <h5 id="modal_total_su"></h5>
+            <div class="alert alert-info text-center"><span class="fa fa-info-circle"></span> All reservations begin at 00:00 UTC on the start date and end at 23:59 UTC on the end date.</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="panel panel-default bg-light">
+              <div class="panel-body">
+                <h5 class="text-uppercase text-secondary">Eligibility Status</h5>
+                <p>Based on your current usage and project allocation limits.</p>
+                <div id="hours_eligibilty">
+                  <p class="h2"><span id="modal_total_days_used">{{ limits.totalDaysUsed }}</span> / <span id="modal_max_days">{{ limits.maxDays }}</span></p>
+                  <h6>Total days / Max days</h6>
+                  <div class="progress">
+                    <div id="hours_progressbar_used" class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="{{ percentage_used }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ percentage_used }}%" title="Days previously reserved.">
+                      <!-- <span class="percentage-used">{{ percentage_used }}%</span> -->
+                    </div>
+                    <div id="hours_progressbar_pending" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%" title="Days selected.">
+                      <!-- <span class="percentage-used">0%</span> -->
+                    </div>
+                  </div>
+                </div>
+                <div id="usage_eligibilty">
+                  <p class="h2"><span id="modal_total_su_used"></span> / <span id="modal_su_budget"></span></p>
+                  <h6>SU total / SU budget</h6>
+                  <div class="progress">
+                    <div id="usage_progressbar_used" class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%" title="SU used to date.">
+                      <!-- <span class="percentage-used">0%</span> -->
+                    </div>
+                    <div id="usage_progressbar_pending" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"  title="SU usage estimate.">
+                      <!-- <span class="percentage-used">0%</span> -->
+                    </div>
+                  </div>
+                </div>
+                <div id="eligibility_status" class="text-center display-none"></div>
+                <p id="eligibility_message" class="text-center display-none">
+                  NOTE: this calculation does not take into account SU usage between now and the reservation start date.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer text-center">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button id="reserve_btn" type="button" class="btn btn-success" data-dismiss="modal">Reserve</button>      
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Form to create reservation -->
+<form id="reserve_form" method="POST" action="{% url 'horizon:project:reservations:create' %}">
+  {% csrf_token %}
+  <input type="hidden" name="start" value="" />
+  <input type="hidden" name="end" value="" />
+  <input type="hidden" name="flavor" value="" />
+</form>
+
+<script>
+  $(document).ready(function() {
+    reservationAvailabilty.setReservationLimits({{ limits.maxDays }}, {{ limits.totalDaysUsed }}, {{ limits.maxReservations }}, {{ limits.maxHours }});
+    reservationAvailabilty.getUsageData();
+    reservationAvailabilty.showSlots();
+    $("select[name='availabilty_zone']").change(function() {
+      reservationAvailabilty.showSlots();
+    });
+    $("input[type='radio'][name='flavor_category']").change(function() {
+      reservationAvailabilty.showSlots();
+    });
+    $("#reserve_btn").click(function() {
+      reservationAvailabilty.createReservation();
+    });
+  });
+</script>
 {% endblock %}
