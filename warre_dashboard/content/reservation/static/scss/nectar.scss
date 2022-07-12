@@ -10,3 +10,12 @@
 select.form-control {
   padding: 6px 16px 6px 12px
 }
+
+#flavor_type_filter {
+  input[type="radio"] {
+    &:focus,
+    &:focus-visible {
+      outline: none !important;
+    }
+  }
+}

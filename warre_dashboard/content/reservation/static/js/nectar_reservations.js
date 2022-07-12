@@ -75,7 +75,7 @@ var reservationAvailabilty = (function() {
           availability_zone: item.flavor.availability_zone,
           size: (item.flavor.vcpu + "VCPUs " + item.flavor.memory_mb + "MB RAM"),
           max_length_hours: item.flavor.max_length_hours,
-          usage_rate: item.flavor.extra_specs["nectar:rate"] ? (item.flavor.extra_specs["nectar:rate"] + " SU/day") : "FREE",
+          usage_rate: item.flavor.extra_specs["nectar:rate"] ? (item.flavor.extra_specs["nectar:rate"] + " SU/hour") : "FREE",
         }
       };
 
@@ -213,13 +213,13 @@ var reservationAvailabilty = (function() {
   }
 
   function updateDateRange(start, end) {
-    selected_start = start;
-    selected_end = end;
-    moment_start = moment(start, "DD/MM/YYYY");
-    moment_end = moment(end, "DD/MM/YYYY");
-    selected_days = moment_end.diff(moment_start, 'days');
+    selected_start = start.format("DD/MM/YYYY");
+    selected_end = end.format("DD/MM/YYYY");
+    var duration = moment.duration(moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY")));
+    console.log(duration.asDays());
+    selected_days = duration.asDays() + 1; // to include end date in the duration
     console.log("su_rate: " + selected_usage_rate + " selected_days: " + selected_days);
-    selected_su = convertToFloat(selected_usage_rate * selected_days);
+    selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
     checkEligibilty();
   }
 
@@ -250,7 +250,7 @@ var reservationAvailabilty = (function() {
     var duration = moment.duration(moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY")));
     selected_days = duration.asDays() + 1; // to include end date in the duration
     // selected_days = slot_available_days - days_between_dates;
-    selected_su = convertToFloat(selected_usage_rate * selected_days);
+    selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
     //days_between_dates =
     // console.log("max_days_eligible: " + max_days_eligible + " slotAvailableDays: " + slotAvailableDays);
     // console.log(selected_start + " to " + selected_end);
@@ -267,11 +267,11 @@ var reservationAvailabilty = (function() {
     if(slot) {
       selected_flavor = slot.parent_id;
       selected_usage_rate = getSURate(slot.details.usage_rate);
-      selected_su = convertToFloat(selected_usage_rate * selected_days);
+      selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
       // console.log("selected_usage_rate: " + selected_usage_rate);
       $("#modal_flavor_title").text(slot.title);
       $("#modal_flavor_details").html(getDetails(slot.details));
-      showDateRange(selected_start, selected_end);
+      showDateRange(slot.startDate, slot.startDate);
       $("#modal_total_days").text(selected_days + " days");
       checkEligibilty();
       $("#create_reservation_modal").modal();
@@ -291,6 +291,7 @@ var reservationAvailabilty = (function() {
   /* Private function to check the eligibilty of the reservation input */
   function checkEligibilty() {
     $("#reserve_btn").addClass("disabled");
+    $("#reserve_btn").prop('disabled', true);
     $("#eligibility_status").hide();
     $("#eligibility_message").hide();
     var hours_eligible = calculateHours();
@@ -302,13 +303,14 @@ var reservationAvailabilty = (function() {
       $("#eligibility_status").show();
       $("#eligibility_message").show();
       $("#reserve_btn").removeClass("disabled");
+      $("#reserve_btn").prop('disabled', false);
     }
     else {
       if(hours_eligible === false) {
-        $("#eligibility_message").html("The number of selected days exceeds your project's reservation limit. If you require more please amend your allocation.");
+        $("#eligibility_message").html("The number of selected days exceeds your project's reservation limit. If you require more, please amend your allocation.");
       }
       else if(usage_eligible === false) {
-        $("#eligibility_message").html("The number of selected days exceeds your project's usage limit. If you require more please amend your allocation.");
+        $("#eligibility_message").html("The number of selected days exceeds your project's usage limit. If you require, more please amend your allocation.");
       }
       $("#eligibility_status").html("<p class='h3 text-danger'><span class='fa fa-times'></span> Not eligible</p>");
       
@@ -320,24 +322,34 @@ var reservationAvailabilty = (function() {
   function calculateHours() {
     // var selected_hours = selected_days * 24;
 
-    // console.log(selected_days);
-    // console.log(total_days_used);
+    console.log(selected_days);
+    console.log(total_days_used);
+    var used_percent = Math.round(total_days_used / max_days * 100);
+    var pending_percent = Math.round(selected_days / max_days * 100);
     var new_total = selected_days + total_days_used;
-    var new_percent = Math.round(new_total / max_days * 100);
+    var new_percent = Math.ceil(new_total / max_days * 100);
 
     $("#modal_total_days").text(selected_days + " days");
     $("#modal_total_days_used").text(new_total);
-    $("#hours_progressbar").css("width", (new_percent + "%"));
-    $("#hours_progressbar").find(".percentage-used").text(new_percent + "%");
+    $("#hours_progressbar_used").css("width", (used_percent + "%"));
+    $("#hours_progressbar_used").data("aria-valuenow", used_percent.toString());
+    $("#hours_progressbar_pending").css("width", (pending_percent + "%"));
+    $("#hours_progressbar_pending").data("aria-valuenow", pending_percent.toString());
+    // $("#hours_progressbar_pending").find(".percentage-used").text(pending_percent + "%");
     
     if(new_percent <= 100) {
-      $("#hours_progressbar").removeClass("progress-bar-danger");
-      $("#hours_progressbar").addClass("progress-bar-success");
+      $("#hours_progressbar_used").show();
+      $("#hours_progressbar_pending").removeClass("progress-bar-danger");
+      $("#hours_progressbar_pending").addClass("progress-bar-success");
       return true;
     }
     else {
-      $("#hours_progressbar").removeClass("progress-bar-success");
-      $("#hours_progressbar").addClass("progress-bar-danger");
+      $("#hours_progressbar_used").hide();
+      $("#hours_progressbar_pending").css("width", ("100%"));
+      $("#hours_progressbar_pending").data("aria-valuenow", "100");
+      // $("#hours_progressbar_pending").find(".percentage-used").text(new_percent + "%");
+      $("#hours_progressbar_pending").removeClass("progress-bar-success");
+      $("#hours_progressbar_pending").addClass("progress-bar-danger");
       return false; 
     }
   }
@@ -355,8 +367,10 @@ var reservationAvailabilty = (function() {
 
     $("#usage_eligibilty").show();
 
+    var used_percent = Math.round(total_su_used / max_su * 100);
+    var pending_percent = Math.round(selected_su / max_su * 100);
     var new_total = Math.round(selected_su + total_su_used);
-    var new_percent = Math.round(new_total / max_su * 100);
+    var new_percent = Math.ceil(new_total / max_su * 100);
     // max_su = Number($("#modal_su_budget").text());
     // console.log("new_total: " + new_total);
     // console.log("max_su: " + max_su);
@@ -365,17 +379,26 @@ var reservationAvailabilty = (function() {
     $("#modal_total_su").text(selected_su + " Service Units");
     $("#modal_total_su_used").text(new_total);
     // console.log("new_percent: " + new_percent);
-    $("#usage_progressbar").css("width", (new_percent + "%"));
-    $("#usage_progressbar").find(".percentage-used").text(new_percent + "%");
+    $("#usage_progressbar_used").css("width", (used_percent + "%"));
+    $("#usage_progressbar_used").data("aria-valuenow", used_percent.toString());
+    // $("#usage_progressbar_used").find(".percentage-used").text(used_percent + "%");
+    $("#usage_progressbar_pending").css("width", (pending_percent + "%"));
+    $("#usage_progressbar_pending").data("aria-valuenow", pending_percent.toString());
+    // $("#usage_progressbar_pending").find(".percentage-used").text(pending_percent + "%");
     
     if(new_percent <= 100) {
-      $("#usage_progressbar").removeClass("progress-bar-danger");
-      $("#usage_progressbar").addClass("progress-bar-success");
+      $("#usage_progressbar_used").show();
+      $("#usage_progressbar_pending").removeClass("progress-bar-danger");
+      $("#usage_progressbar_pending").addClass("progress-bar-success");
       return true;
     }
     else {
-      $("#usage_progressbar").removeClass("progress-bar-success");
-      $("#usage_progressbar").addClass("progress-bar-danger");
+      $("#usage_progressbar_used").hide();
+      $("#usage_progressbar_pending").css("width", ("100%"));
+      $("#usage_progressbar_pending").data("aria-valuenow", "100");
+      // $("#usage_progressbar_pending").find(".percentage-used").text(new_percent + "%");
+      $("#usage_progressbar_pending").removeClass("progress-bar-success");
+      $("#usage_progressbar_pending").addClass("progress-bar-danger");
       return false; 
     }
     
@@ -414,7 +437,7 @@ var reservationAvailabilty = (function() {
         if(data) {
           console.log("Got budget! " + data);
           max_su = data;
-          // max_su = 5000;
+          // max_su = 6000;
           $("#su_budget").text(max_su);
           $("#modal_su_budget").text(max_su);
           return true;
@@ -468,7 +491,7 @@ var reservationAvailabilty = (function() {
     var form_id = "#reserve_form";
     //$(form_id).attr('action', window.location.href);
     var start_time = moment(selected_start, 'DD/MM/YYYY').format('YYYY-MM-DD') + " 00:00";
-    var end_time = moment(selected_end, 'DD/MM/YYYY').subtract(1, 'days').format('YYYY-MM-DD') + " 23:59";
+    var end_time = moment(selected_end, 'DD/MM/YYYY').format('YYYY-MM-DD') + " 23:59";
     $(form_id + " input[name='start']").val(start_time);
     $(form_id + " input[name='end']").val(end_time);
     $(form_id + " input[name='flavor']").val(selected_flavor);
