@@ -309,7 +309,7 @@ var reservationAvailabilty = (function() {
         $("#eligibility_message").html("The number of selected days exceeds your project's reservation limit. If you require more, please amend your allocation.");
       }
       else if(usage_eligible === false) {
-        $("#eligibility_message").html("The number of selected days exceeds your project's usage limit. If you require, more please amend your allocation.");
+        $("#eligibility_message").html("The number of selected days exceeds your project's usage limit. If you require more, please amend your allocation.");
       }
       $("#eligibility_status").html("<p class='h3 text-danger'><span class='fa fa-times'></span> Not eligible</p>");
       
@@ -358,7 +358,7 @@ var reservationAvailabilty = (function() {
   /* Private function to show eligibilty to reserve the total service units for selected days */
   function calculateSU() {
     // var selected_hours = selected_days * 24;
-    if(!selected_usage_rate || !max_su) {
+    if(!selected_usage_rate || max_su === -1) {
       hideSUCalculator();
       return true;
     }
@@ -419,11 +419,7 @@ var reservationAvailabilty = (function() {
         return false;
       },
       error: function (xhr, ajaxOptions, thrownError) {
-        if(xhr.status == 404) { 
-          console.log("The project has no SU usage.");
-          hideSUCalculator();
-        }
-        console.error(xhr.status + " " + thrownError);
+        console.error(url + " " + xhr.status + " " + thrownError);
         return false;
       }
     });
@@ -439,19 +435,19 @@ var reservationAvailabilty = (function() {
         if(data) {
           // console.log("Got budget! " + data);
           max_su = data;
-          // max_su = 6000;
-          $("#su_budget").text(max_su);
           $("#modal_su_budget").text(max_su);
+          if(max_su === -1) {
+            $("#su_budget").text("Unlimited");
+          }
+          else {
+            $("#su_budget").text(max_su);
+          }
           return true;
         }
         return false;
       },
       error: function (xhr, ajaxOptions, thrownError){
-        if(xhr.status == 404) { 
-          console.log("The project does not have a usage budget.");
-          hideSUCalculator();
-        }
-        console.error(xhr.status + " " + thrownError);
+        console.error(url + " " + xhr.status + " " + thrownError);
         return false;
       }
     });
