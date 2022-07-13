@@ -172,8 +172,6 @@ class ReservationTable(tables.DataTable):
     status = tables.Column('status', status=True,
                            status_choices=STATUS_CHOICES,
                            display_choices=STATUS_DISPLAY_CHOICES)
-    instance_count = tables.Column('instance_count',
-                                   verbose_name="Instance Count")
 
     class Meta:
         status_columns = ['status']
