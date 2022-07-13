@@ -57,7 +57,7 @@ class CreateForm(forms.SelfHandlingForm):
             self.api_error(e.messages[0])
             return False
         except Exception:
-            redirect = reverse("horizon:project:reservations:index")
+            redirect = reverse("horizon:project:reservations:create")
             exceptions.handle(request,
                               "Unable to create reservation.",
                               redirect=redirect)
