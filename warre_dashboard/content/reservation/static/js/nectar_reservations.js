@@ -6,11 +6,12 @@ var reservationAvailabilty = (function() {
   var availabilty_zone = "";
   // var max_hours;
   // var total_hours_used;
-  // var max_reservations;
-  // var total_reservations_used;
-  var selected_usage_rate = 0;
   var max_days = 0;
   var total_days_used = 0;
+  var max_days_eligible = 0;
+  var max_reservations;
+  var total_reservations_used;
+  var max_reservations_eligible;
   var max_su = 0;
   var total_su_used = 0;
   var selected_start;
@@ -19,7 +20,7 @@ var reservationAvailabilty = (function() {
   var selected_su;
   var selected_flavor;
   var selected_max_days;
-  var max_days_eligible;
+  var selected_usage_rate = 0;
   // var max_su_eligible = 0;
 
   /* Private function to convert string to number with 2 decimal places */
@@ -106,9 +107,9 @@ var reservationAvailabilty = (function() {
   function displayReservationsTable() {
     getReservationsData()
       .then((data) => {
-        console.log(data);
+        // console.log(data);
         reservation_data = formatSlotData(data);
-        console.log(reservation_data);
+        // console.log(reservation_data);
         $(".reservations-error").hide();
         $('#reservations_table').show();
 
@@ -120,7 +121,7 @@ var reservationAvailabilty = (function() {
           labelTask: false,
           data: reservation_data,
           click: function(taskId, taskName, taskStart, taskEnd, taskCountDays) {
-            console.log('Clicked!', taskId, taskName, taskCountDays);
+            // console.log('Clicked!', taskId, taskName, taskCountDays);
             displayReserveModal(taskId);
           }
         });
@@ -171,21 +172,17 @@ var reservationAvailabilty = (function() {
   /* Private function to show max days shaded hover block on time slot */
   function activateSlotMouseover() {
 
-    // Does the project have reservation days remaining?
-    if(max_days_eligible) {
-      $(".div-task").each(function() {
-        // Determine max days and set hover block width for each time slot
-        selected_max_days = Math.floor(Number($(this).parent().attr('task_max_hours')) / 24);
-        var hover_size = Math.min(max_days_eligible, selected_max_days); // The smaller number of days eligible to book for the flavor
-        var slot_available_days = Number($(this).parent().attr('task_days'));
-        if(hover_size < slot_available_days) {
-          let slot_hover = $(this).find('.show-hover');
-          let hover_width_percent = hover_size / slot_available_days * 100;
-          slot_hover.css('width', hover_width_percent + "%");
-        }
-      });
-    } 
-
+    $(".div-task").each(function() {
+      // Determine max days and set hover block width for each time slot
+      selected_max_days = Math.floor(Number($(this).parent().attr('task_max_hours')) / 24);
+      var hover_size = Math.min(max_days_eligible, selected_max_days); // The smaller number of days eligible to book for the flavor
+      var slot_available_days = Number($(this).parent().attr('task_days'));
+      if(hover_size < slot_available_days) {
+        let slot_hover = $(this).find('.show-hover');
+        let hover_width_percent = hover_size / slot_available_days * 100;
+        slot_hover.css('width', hover_width_percent + "%");
+      }
+    });
     // Create mousemove event for each time slot div
     $(".div-task").mousemove(function(e) {
       var rel_x = e.pageX - $(this).offset().left;
@@ -210,18 +207,6 @@ var reservationAvailabilty = (function() {
     let start_day_pos = hover_pos > 0 ? hover_pos - 1 : 0;
 
     div_element.find(".show-hover").css({'left': day_positions[start_day_pos]});
-  }
-
-  /* Private function to update the selected dates with given dates */
-  function updateDateRange(start, end) {
-    selected_start = start.format("DD/MM/YYYY");
-    selected_end = end.format("DD/MM/YYYY");
-    var duration = moment.duration(moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY")));
-    console.log(duration.asDays());
-    selected_days = duration.asDays() + 1; // to include end date in the duration
-    console.log("su_rate: " + selected_usage_rate + " selected_days: " + selected_days);
-    selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
-    checkEligibilty();
   }
 
   /* Private function to update the date range displayed in the tooltip and modal */
@@ -259,6 +244,18 @@ var reservationAvailabilty = (function() {
     $(tootltip_id).find(".tooltip-days").text(selected_days + " days");
   }
 
+  /* Private function to update the selected dates with given dates */
+  function updateDateRange(start, end) {
+    selected_start = start.format("DD/MM/YYYY");
+    selected_end = end.format("DD/MM/YYYY");
+    var duration = moment.duration(moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY")));
+    console.log(duration.asDays());
+    selected_days = duration.asDays() + 1; // to include end date in the duration
+    console.log("su_rate: " + selected_usage_rate + " selected_days: " + selected_days);
+    selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
+    checkEligibilty();
+  }
+
   /* Private function to display the reserve modal */
   function displayReserveModal(slot_id) {
     var slot = reservation_data.find(obj => {
@@ -272,7 +269,7 @@ var reservationAvailabilty = (function() {
       // console.log("selected_usage_rate: " + selected_usage_rate);
       $("#modal_flavor_title").text(slot.title);
       $("#modal_flavor_details").html(getDetails(slot.details));
-      showDateRange(slot.startDate, slot.startDate);
+      showDateRange(slot.date_start, slot.date_end);
       $("#modal_total_days").text(selected_days + " days");
       checkEligibilty();
       $("#create_reservation_modal").modal();
@@ -301,7 +298,7 @@ var reservationAvailabilty = (function() {
     
     if(hours_eligible && usage_eligible) {
       $("#eligibility_status").html("<p class='h3 text-success'><span class='fa fa-check'></span> Eligible</p>");
-      $("#eligibility_message").html("<strong>NOTE:</strong> this calculation does not take into account SU usage between now and the reservation start date.");
+      if(max_su) { $("#eligibility_message").html("<strong>NOTE:</strong> this calculation does not take into account SU usage between now and the reservation start date."); }
       $("#eligibility_status").show();
       $("#eligibility_message").show();
       $("#reserve_btn").removeClass("disabled");
@@ -325,8 +322,8 @@ var reservationAvailabilty = (function() {
   function calculateHours() {
     // var selected_hours = selected_days * 24;
 
-    console.log(selected_days);
-    console.log(total_days_used);
+    // console.log(selected_days);
+    // console.log(total_days_used);
     var used_percent = Math.round(total_days_used / max_days * 100);
     var pending_percent = Math.round(selected_days / max_days * 100);
     var new_total = selected_days + total_days_used;
@@ -340,7 +337,8 @@ var reservationAvailabilty = (function() {
     $("#hours_progressbar_pending").data("aria-valuenow", pending_percent.toString());
     // $("#hours_progressbar_pending").find(".percentage-used").text(pending_percent + "%");
     
-    if(new_percent <= 100) {
+    // Does the project have days remaining and is total below the days limit?
+    if(max_days_eligible && new_percent <= 100) {
       $("#hours_progressbar_used").show();
       $("#hours_progressbar_pending").removeClass("progress-bar-danger");
       $("#hours_progressbar_pending").addClass("progress-bar-success");
@@ -360,13 +358,9 @@ var reservationAvailabilty = (function() {
   /* Private function to show eligibilty to reserve the total service units for selected days */
   function calculateSU() {
     // var selected_hours = selected_days * 24;
-    if(!selected_usage_rate) {
-      $("#usage_eligibilty").hide();
+    if(!selected_usage_rate || !max_su) {
+      hideSUCalculator();
       return true;
-    }
-    else if(!max_su) {
-      console.error("The project does not have a usage budget.")
-      return false;
     }
 
     $("#usage_eligibilty").show();
@@ -403,6 +397,10 @@ var reservationAvailabilty = (function() {
     }
   }
 
+  function hideSUCalculator() {
+    $("#usage_eligibilty").hide();
+  }
+
   /* Private function to get the project usage to date from api request */
   function getUsageTotal() {
     $.ajax({
@@ -420,8 +418,12 @@ var reservationAvailabilty = (function() {
         }
         return false;
       },
-      error: function(error) {
-        console.log(error);
+      error: function (xhr, ajaxOptions, thrownError) {
+        if(xhr.status == 404) { 
+          console.log("The project has no SU usage.");
+          hideSUCalculator();
+        }
+        console.error(xhr.status + " " + thrownError);
         return false;
       }
     });
@@ -435,7 +437,7 @@ var reservationAvailabilty = (function() {
       async: false,
       success: function(data) {
         if(data) {
-          console.log("Got budget! " + data);
+          // console.log("Got budget! " + data);
           max_su = data;
           // max_su = 6000;
           $("#su_budget").text(max_su);
@@ -444,8 +446,12 @@ var reservationAvailabilty = (function() {
         }
         return false;
       },
-      error: function(error) {
-        console.log(error);
+      error: function (xhr, ajaxOptions, thrownError){
+        if(xhr.status == 404) { 
+          console.log("The project does not have a usage budget.");
+          hideSUCalculator();
+        }
+        console.error(xhr.status + " " + thrownError);
         return false;
       }
     });
@@ -460,10 +466,14 @@ var reservationAvailabilty = (function() {
   // }
 
   /* Public function to set reservation limits */
-  reservations.setReservationLimits = function(project_max_days = 0, project_days_used = 0) {
+  reservations.setReservationLimits = function(project_max_days = 0, project_days_used = 0, project_max_reservations = 0, project_reservations_used = 0) {
     max_days = project_max_days;
     total_days_used = project_days_used;
     max_days_eligible = max_days - total_days_used;
+
+    max_reservations = project_max_reservations;
+    total_reservations_used = project_reservations_used;
+    max_reservations_eligible = max_reservations - total_reservations_used;
     // console.log("Days remaining: " + max_days_eligible);
   }
 
@@ -471,7 +481,13 @@ var reservationAvailabilty = (function() {
   reservations.showSlots = function() {
     category = $("input[type='radio'][name='flavor_category']:checked").val();
     availabilty_zone = $("#availabilty_zone option:selected").val();
-    displayReservationsTable();
+    if(max_days_eligible && max_reservations_eligible) {
+      displayReservationsTable();
+    }
+    else {
+      $(".reservations-error").text("You can't create a reservation because your project limits have been reached.");
+      $(".reservations-error").removeClass("alert-warning").addClass("alert-danger");
+    }
   }
 
   /* Public function to submit the create reservation form */
@@ -485,7 +501,7 @@ var reservationAvailabilty = (function() {
     $(form_id).submit();
   }
 
-  /* Public function to submit the create reservation form */
+  /* Public function check if project has usage total and budget to display */
   reservations.getUsageData = function() {
     let usage_total = getUsageTotal();
     let usage_budget = getUsageBudget();
