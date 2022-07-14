@@ -20,6 +20,7 @@ var reservationAvailabilty = (function() {
   var selected_su;
   var selected_flavor;
   var selected_max_days;
+  var selected_max_days_eligible;
   var selected_usage_rate = 0;
   // var max_su_eligible = 0;
 
@@ -152,13 +153,16 @@ var reservationAvailabilty = (function() {
   }
 
   /* Private function to initialize bootstrap daterangepicker with selected dates */
-  function showDateRange(slotStart, slotEnd) {
+  function showDateRange(slot_start, slot_end) {
     $('input[name="daterange"]').daterangepicker({
       opens: 'left',
       startDate: selected_start,
       endDate: selected_end,
-      minDate: slotStart,
-      maxDate: slotEnd,
+      minDate: slot_start,
+      maxDate: slot_end,
+      maxSpan: {
+        "days": selected_max_days_eligible
+      },
       // parentEl: "#content_body",
       locale: {
         format: 'DD/MM/YYYY'
@@ -215,31 +219,29 @@ var reservationAvailabilty = (function() {
     slot_end_date = div_element.parent().attr('end');
     slot_available_days = Number(div_element.parent().attr('task_days'));
     selected_max_days = Math.floor(Number(div_element.parent().attr('task_max_hours')) / 24);
-    var slot_length = Math.min(max_days_eligible, selected_max_days) - 1; // The smaller number of days eligible to book for the flavor - 1 to hover ending on last day
+    selected_max_days_eligible = Math.min(max_days_eligible, selected_max_days) - 1; // The smaller number of days eligible to book for the flavor - 1 to hover ending on last day
     var tootltip_id = "#tooltip_" + div_element.parent().attr('task_id');
 
     percentage_of_hover = pixel_left_pos / div_element.width() * 100;
     difference_between_dates = (percentage_of_hover / 100) * slot_available_days;
     days_between_dates = Math.floor(difference_between_dates);
-    // // console.log("differenceBetweenDates: " + differenceBetweenDates + " daysBetweenDates: " + daysBetweenDates);
+    
     selected_start = moment(slot_start_date, "DD/MM/YYYY").add(days_between_dates, 'days').format("DD/MM/YYYY");
-
-    if(slot_length < slot_available_days) {
-      selected_end = moment(selected_start, "DD/MM/YYYY").add(slot_length, 'days').format("DD/MM/YYYY");
+    
+    if(selected_max_days_eligible <= slot_available_days) {
+      selected_end = moment(selected_start, "DD/MM/YYYY").add(selected_max_days_eligible, 'days').format("DD/MM/YYYY");
       if(moment(selected_end, "DD/MM/YYYY").isAfter(moment(slot_end_date, "DD/MM/YYYY"))) {
-        selected_end = slot_end_date;
+        selected_end = moment(slot_end_date, "DD/MM/YYYY").format("DD/MM/YYYY");
       }
     }
     else {
-      selected_end = slot_end_date;
+      selected_end = moment(slot_end_date, "DD/MM/YYYY").format("DD/MM/YYYY");
     }
-    var duration = moment.duration(moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY")));
-    selected_days = duration.asDays() + 1; // to include end date in the duration
-    // selected_days = slot_available_days - days_between_dates;
+    
+    var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), 'days');
+    selected_days = moment_difference + 1; // to include end date in the duration
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
-    //days_between_dates =
-    // console.log("max_days_eligible: " + max_days_eligible + " slotAvailableDays: " + slotAvailableDays);
-    // console.log(selected_start + " to " + selected_end);
+
     $(tootltip_id).find(".tooltip-date").text(selected_start + " to " + selected_end);
     $(tootltip_id).find(".tooltip-days").text(selected_days + " days");
   }
@@ -248,9 +250,8 @@ var reservationAvailabilty = (function() {
   function updateDateRange(start, end) {
     selected_start = start.format("DD/MM/YYYY");
     selected_end = end.format("DD/MM/YYYY");
-    var duration = moment.duration(moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY")));
-    console.log(duration.asDays());
-    selected_days = duration.asDays() + 1; // to include end date in the duration
+    var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), "days");
+    selected_days = moment_difference + 1; // to include end date in the duration
     console.log("su_rate: " + selected_usage_rate + " selected_days: " + selected_days);
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
     checkEligibilty();
@@ -266,7 +267,6 @@ var reservationAvailabilty = (function() {
       selected_flavor = slot.parent_id;
       selected_usage_rate = getSURate(slot.details.usage_rate);
       selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
-      // console.log("selected_usage_rate: " + selected_usage_rate);
       $("#modal_flavor_title").text(slot.title);
       $("#modal_flavor_details").html(getDetails(slot.details));
       showDateRange(slot.date_start, slot.date_end);

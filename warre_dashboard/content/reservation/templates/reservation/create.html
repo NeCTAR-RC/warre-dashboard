@@ -31,7 +31,31 @@
   </div>
   <div class="row">
     <div class="col-xs-12 col-md-6">
-      <p>To make a reservation, select an available time slot from the table below. You can customise the reservation start and end dates within the available time slot. Reservations must be a minimum of 24 hours.</p>
+      <div class="panel panel-default shadow">
+        <div class="panel-body">
+          <p>To make a reservation, select an available time slot from the table below. You can customise the reservation start and end dates within the available time slot. Reservations must be a minimum of 24 hours.</p>
+          <h4>Available Flavors Classes</h4>
+          <ul class="nav nav-tabs">
+            <li class="active"><a data-toggle="tab" href="#tab1">G1</a></li>
+            <li><a data-toggle="tab" href="#tab2">G2</a></li>
+            <li><a data-toggle="tab" href="#tab3">H3</a></li>
+          </ul>
+          <div class="tab-content">
+            <div id="tab1" class="tab-pane fade in active">
+	      <h5>G1 - Visualisation GPU</h5>
+              <p>G1 instances come with Nvidia A40s which brings state-of-the-art features for ray-traced rendering, simulation and virtual production.</p>
+            </div>
+            <div id="tab2" class="tab-pane fade">
+	      <h5>G2 - Compute GPU</h5>
+              <p>G2 instances come with the latest generation Nvidia A100 GPUs and provide the highest performance for machine learning training and high performance computing in the cloud.</p>
+            </div>
+            <div id="tab3" class="tab-pane fade">
+              <h5>H3 - Large RAM</h5>
+              <p>H3 instance come with RAM starting from 184G with the h3.large up to 368GB with the h3.xxlarge</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="col-xs-12 col-md-6">
       {% include "reservation/_reservation_limits.html" %}
