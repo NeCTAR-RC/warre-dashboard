@@ -1,3 +1,11 @@
+/**
+  * Nectar Reservations
+  * Author: Darcelle Malby (d.malby@uq.edu.au)
+  * Company: Australian Research Data Commons
+  * Website: https://ardc.edu.au
+  * Copyright: © 2021 ARDC Nectar Research Cloud
+  **/
+
 var reservationAvailabilty = (function() {
 
   var reservations = {};
@@ -263,10 +271,15 @@ var reservationAvailabilty = (function() {
       return obj.id == slot_id
     });
     
+    $("#modal_su_budget").text(max_su);
+
     if(slot) {
       selected_flavor = slot.parent_id;
       selected_usage_rate = getSURate(slot.details.usage_rate);
       selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
+      // selected_max_days = Math.floor(slot.details.max_length_hours / 24);
+      // selected_max_days_eligible = Math.min(max_days_eligible, selected_max_days) - 1; // The smaller number of days eligible to book for the flavor - 1 to hover ending on last day
+      // console.log("selected_usage_rate: " + selected_usage_rate);
       $("#modal_flavor_title").text(slot.title);
       $("#modal_flavor_details").html(getDetails(slot.details));
       showDateRange(slot.date_start, slot.date_end);
@@ -435,7 +448,6 @@ var reservationAvailabilty = (function() {
         if(data) {
           // console.log("Got budget! " + data);
           max_su = data;
-          $("#modal_su_budget").text(max_su);
           if(max_su === -1) {
             $("#su_budget").text("Unlimited");
           }

@@ -1,3 +1,10 @@
+/**
+  * Nectar Reservations Table Styles
+  * Adapted by ARDC Core Services 
+  * from easy-gantt.js using JQuery and Moment.js
+  * by Tiago Silva Costa (https://github.com/tiagotsc/easy-gantt)
+  **/
+  
 table.tb-gantt {
     position: relative;
     table-layout: fixed !important;
@@ -40,6 +47,10 @@ table.tb-gantt thead .days {
     margin: auto;
     padding: 0px;
     text-align: center;
+}
+
+table.tb-gantt thead .today {
+    background-color: #8e489b;
 }
 
 table.tb-gantt thead .days > p{
