@@ -1,54 +1,70 @@
 {% extends 'base.html' %}
 {% load i18n %}
 {% load i18n sizeformat %}
+{% load mathfilters %}
 
-{% block title %}{% trans "Project Details" %}{% endblock %}
+{% block title %}{% trans "Reservation Details" %}{% endblock %}
 
 {% block page_header %}
   {% include "horizon/common/_detail_header.html" %}
 {% endblock %}
 
 {% block main %}
-<div class="row">
-  <div class="col-sm-12">
-    <div class="detail">
-      <dl class="dl-horizontal">
-	<dt>ID</dt>
-	<dd>{{ reservation.id }}</dd>
-	<dt>Start</dt>
-	<dd>{{ reservation.start }}</dd>
-	<dt>End</dt>
-	<dd>{{ reservation.end }}</dd>
-	<dt>Status</dt>
-	<dd>{{ reservation.status }}</dd>
-	<dt>Status Reason</dt>
-	<dd>{{ reservation.status_reason|default_if_none:"" }}</dd>
-	<dt>Instance Count</dt>
-	<dd>{{ reservation.instance_count }}</dd>
-      </dl>
-
-      <h4>Specs</h4>
-      <hr class="header_rule">
-      <dl class="dl-horizontal">
-	<dt>{% trans "Flavor Name" %}</dt>
-	<dd class="word-wrap">{{ reservation.flavor.name }}</dd>
-	<dt>{% trans "Description" %}</dt>
-	<dd>{{ reservation.flavor.description }}</dd>
-	<dt>{% trans "RAM" %}</dt>
-	<dd>{{ reservation.flavor.memory_mb|mb_float_format }}</dd>
-	<dt>{% trans "VCPUs" %}</dt>
-	<dd>{{ reservation.flavor.vcpu }} {% trans "VCPU" %}</dd>
-	<dt>{% trans "Disk" %}</dt>
-	<dd>{{ reservation.flavor.disk_gb }}{% trans "GB" %}</dd>
-	<dt>Max reservation length</dt>
-	<dd>{{ reservation.flavor.max_length_hours }} hours</dd>
-	<dt>Public</dt>
-	<dd>{{ reservation.flavor.is_public }}</dd>
-	<dt></dt>
-	<dd></dd>
-      </dl>
-
-    </div>
-  </div>
+<div class="detail">
+	<a href="{% url 'horizon:project:reservations:index' %}" class="btn btn-link"><i class="fa fa-arrow-left"></i> Back</a>
+	<div class="block-title mb-2">
+		<h3>Reservation Details</h3>
+	</div>
+	<div class="row">
+		<div class="col-xs-12 col-sm-6 col-md-8">
+			<div class="panel panel-default shadow">
+				<div class="panel-body">
+					<h4>{{ reservation.id }}</h4>
+					<h5 class="text-secondary"><span class="fa fa-clock-o"></span> {{ reservation.start }} to {{ reservation.end }}</h5>
+					<hr />
+					<dl>
+						<dt>Compute Flavor Name</dt>
+						<dd>reservation:{{ reservation.compute_flavor }}</dd>
+						<dt>Status</dt>
+						<dd>{{ reservation.status }}</dd>
+						<dt>Status Reason</dt>
+						<dd>{{ reservation.status_reason|default_if_none:"N/A" }}</dd>
+					</dl>
+					{% if reservation.status == "ALLOCATED" %}
+						<div class="alert alert-info">The reservation will become active on the start date. You will then be able to <strong>launch the instance</strong> on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page.</div>
+					{% elif reservation.status == "ACTIVE" %}
+						<div class="alert alert-success">The reservation is active, you can now <strong>launch the instance</strong> by selecting the <strong>"reservation:{{ reservation.compute_flavor }}"</strong> flavor on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page.</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+		<div class="col-xs-12 col-sm-6 col-md-4">
+			<div class="panel panel-default shadow">
+				<div class="panel-heading">Flavor Specs</div>
+				<div class="panel-body">
+					<dl class="dl-horizontal">
+						<dt>{% trans "Flavor Name" %}</dt>
+						<dd class="word-wrap">{{ reservation.flavor.name }}</dd>
+						<dt>{% trans "Flavor Class" %}</dt>
+						<dd>{{ reservation.flavor.category }}</dd>
+						<dt>{% trans "Description" %}</dt>
+						<dd>{{ reservation.flavor.description }}</dd>
+						<dt>{% trans "VCPUs" %}</dt>
+						<dd>{{ reservation.flavor.vcpu }} {% trans "VCPU" %}</dd>
+						<dt>{% trans "RAM" %}</dt>
+						<dd>{{ reservation.flavor.memory_mb|mb_float_format }}</dd>
+						<dt>{% trans "Disk" %}</dt>
+						<dd>{{ reservation.flavor.disk_gb }}{% trans "GB" %}</dd>
+						<dt class="word-wrap">Max Reservation Length</dt>
+						<dd>{{ reservation.flavor.max_length_hours|div:24 }} days</dd>
+						<dt>Public</dt>
+						<dd>{{ reservation.flavor.is_public }}</dd>
+						<dt></dt>
+						<dd></dd>
+					</dl>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 {% endblock %}
