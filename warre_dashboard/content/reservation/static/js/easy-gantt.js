@@ -21,7 +21,7 @@ $.fn.gantt = function (options) {
 	let idThead = '#thead_'+unic;
 	let idTbody = '#tbody_'+unic;
     let conflicts = '#conflicts_'+unic;
-    let tooltipShow = (options.tooltipShow === false)? false: true;
+    let tooltipShow = (window.matchMedia("(max-width: 767px)").matches === true)? false: true; // only show the tooltip if the screen is not a mobile device
 
     //return this.each(function () {
     $(this).css({"margin-left": "auto", "margin-right": "auto", "width": "100%"});
