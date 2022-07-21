@@ -27,13 +27,13 @@
 						<dd>reservation:{{ reservation.compute_flavor }}</dd>
 						<dt>Status</dt>
 						<dd>{{ reservation.status }}</dd>
-						<dt>Status Reason</dt>
-						<dd>{{ reservation.status_reason|default_if_none:"N/A" }}</dd>
 					</dl>
 					{% if reservation.status == "ALLOCATED" %}
 						<div class="alert alert-info">The reservation will become active on the start date. You will then be able to <strong>launch the instance</strong> on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page.</div>
 					{% elif reservation.status == "ACTIVE" %}
 						<div class="alert alert-success">The reservation is active, you can now <strong>launch the instance</strong> by selecting the <strong>"reservation:{{ reservation.compute_flavor }}"</strong> flavor on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page.</div>
+					{% elif reservation.status == "ERROR" %}
+					<div class="alert alert-danger">{{ reservation.status_reason|default_if_none:"Reservation Error: Please contact Nectar Support." }}</div>
 					{% endif %}
 				</div>
 			</div>
