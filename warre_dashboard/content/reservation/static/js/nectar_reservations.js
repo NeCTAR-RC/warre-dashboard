@@ -37,6 +37,10 @@ var reservationAvailabilty = (function() {
     return Math.round(Number(str_num) * 100) / 100;
   }
 
+  function hoursToDays(str_num) {
+    return Math.floor(Number(str_num) / 24);
+  }
+
   /* Private function to get reservation calendar data */
   function getReservationsData() {
     const data_start = moment().add(1, 'days').format('YYYY-MM-DD');
@@ -80,11 +84,11 @@ var reservationAvailabilty = (function() {
         date_end: moment(item.end).format('DD/MM/YYYY'),
         color: '#81d033',
         details: {
-          category: item.flavor.category,
+          class: item.flavor.category,
           description: item.flavor.description,
           availability_zone: item.flavor.availability_zone,
           size: (item.flavor.vcpu + "VCPUs " + item.flavor.memory_mb + "MB RAM"),
-          max_length_hours: item.flavor.max_length_hours,
+          max_duration: hoursToDays(item.flavor.max_length_hours) + " days",
           usage_rate: item.flavor.extra_specs["nectar:rate"] ? (item.flavor.extra_specs["nectar:rate"] + " SU/hour") : "FREE",
         }
       };
@@ -171,7 +175,7 @@ var reservationAvailabilty = (function() {
       maxSpan: {
         "days": selected_max_days_eligible
       },
-      // parentEl: "#content_body",
+      // parentEl: "#main_body",
       locale: {
         format: 'DD/MM/YYYY'
       }
@@ -186,7 +190,7 @@ var reservationAvailabilty = (function() {
 
     $(".div-task").each(function() {
       // Determine max days and set hover block width for each time slot
-      selected_max_days = Math.floor(Number($(this).parent().attr('task_max_hours')) / 24);
+      selected_max_days = $(this).parent().attr('task_max_days');
       var hover_size = Math.min(max_days_eligible, selected_max_days); // The smaller number of days eligible to book for the flavor
       var slot_available_days = Number($(this).parent().attr('task_days'));
       if(hover_size < slot_available_days) {
@@ -226,7 +230,7 @@ var reservationAvailabilty = (function() {
     slot_start_date = div_element.parent().attr('start');
     slot_end_date = div_element.parent().attr('end');
     slot_available_days = Number(div_element.parent().attr('task_days'));
-    selected_max_days = Math.floor(Number(div_element.parent().attr('task_max_hours')) / 24);
+    selected_max_days = div_element.parent().attr('task_max_days');
     selected_max_days_eligible = Math.min(max_days_eligible, selected_max_days) - 1; // The smaller number of days eligible to book for the flavor - 1 to hover ending on last day
     var tootltip_id = "#tooltip_" + div_element.parent().attr('task_id');
 
@@ -277,7 +281,7 @@ var reservationAvailabilty = (function() {
       selected_flavor = slot.parent_id;
       selected_usage_rate = getSURate(slot.details.usage_rate);
       selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
-      // selected_max_days = Math.floor(slot.details.max_length_hours / 24);
+      // selected_max_days = Math.floor(slot.details.max_duration / 24);
       // selected_max_days_eligible = Math.min(max_days_eligible, selected_max_days) - 1; // The smaller number of days eligible to book for the flavor - 1 to hover ending on last day
       // console.log("selected_usage_rate: " + selected_usage_rate);
       $("#modal_flavor_title").text(slot.title);

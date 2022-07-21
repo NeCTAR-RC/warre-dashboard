@@ -26,8 +26,6 @@
   <a href="{% url 'horizon:project:reservations:index' %}" class="btn btn-link"><i class="fa fa-arrow-left"></i> Back</a>
   <div class="block-title mb-2">
     <h3>Create Reservation</h3>
-    {{ form.errors }}
-    {{ form.non_field_errors }}
   </div>
   <div class="row">
     <div class="col-xs-12 col-md-6">
@@ -36,20 +34,20 @@
           <p>To make a reservation, select an available time slot from the table below. You can customise the reservation start and end dates within the available time slot. Reservations must be a minimum of 24 hours.</p>
           <h4>Available Flavor Classes</h4>
           <ul class="nav nav-tabs">
-            <li class="active"><a data-toggle="tab" href="#tab1">G1</a></li>
-            <li><a data-toggle="tab" href="#tab2">G2</a></li>
-            <li><a data-toggle="tab" href="#tab3">H3</a></li>
+            <li class="active"><a data-toggle="tab" href="#g1">G1</a></li>
+            <li><a data-toggle="tab" href="#g2">G2</a></li>
+            <li><a data-toggle="tab" href="#h3">H3</a></li>
           </ul>
           <div class="tab-content">
-            <div id="tab1" class="tab-pane fade in active">
-	      <h5>G1 - Visualisation GPU</h5>
+            <div id="g1" class="tab-pane fade in active">
+	            <h5>G1 - Visualisation GPU</h5>
               <p>G1 instances come with Nvidia A40s which brings state-of-the-art features for ray-traced rendering, simulation and virtual production.</p>
             </div>
-            <div id="tab2" class="tab-pane fade">
-	      <h5>G2 - Compute GPU</h5>
+            <div id="g2" class="tab-pane fade">
+	            <h5>G2 - Compute GPU</h5>
               <p>G2 instances come with the latest generation Nvidia A100 GPUs and provide the highest performance for machine learning training and high performance computing in the cloud.</p>
             </div>
-            <div id="tab3" class="tab-pane fade">
+            <div id="h3" class="tab-pane fade">
               <h5>H3 - Large RAM</h5>
               <p>H3 instance come with RAM starting from 184G with the h3.large up to 368GB with the h3.xxlarge</p>
             </div>
@@ -77,7 +75,7 @@
           <div class="d-md-flex align-items-center justify-content-between mb-4">
             <div class="d-inline-block">
               <form class="form-inline">
-                <label class="mr-3">Flavor Type</label>
+                <label class="mr-3">Flavor Class</label>
                 <div id="flavor_type_filter" class="btn-group" data-toggle="buttons">
                   <label class="btn btn-sm btn-default active">
                     <input type="radio" name="flavor_category" id="flavor_category1" value="" checked> All
@@ -127,7 +125,7 @@
             <input type="text" id="date_selector" class="form-control" name="daterange" />
             <h4 id="modal_total_days"></h4>
             <h5 id="modal_total_su"></h5>
-            <div class="alert alert-info text-center"><span class="fa fa-info-circle"></span> All reservations begin at 00:00 UTC on the start date and end at 23:59 UTC on the end date.</div>
+            <div class="alert alert-info text-center"><span class="fa fa-info-circle"></span> All reservations begin at 00:00am UTC (<span class="local-start-time">{{ TIME_ZONE }}</span>) on the start date and end at 23:59pm UTC (<span class="local-end-time"></span>) on the end date.</div>
           </div>
           <div class="col-sm-6">
             <div class="panel panel-default bg-light">
