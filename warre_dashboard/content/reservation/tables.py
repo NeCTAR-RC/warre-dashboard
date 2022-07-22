@@ -112,6 +112,7 @@ def get_flavor(reservation):
     context = {
         "id": reservation.id,
         "name": flavor.name,
+        "description": flavor.description,
         "vcpus": flavor.vcpu,
         "size_ram": size_ram,
         "size_disk": size_disk,
