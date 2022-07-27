@@ -75,6 +75,12 @@ var reservationAvailabilty = (function() {
     let index = 1;
 
     object_data.forEach(item => {
+      var flavor_size = item.flavor.vcpu + "VCPUs " + item.flavor.memory_mb + "MB RAM";
+      var disk_size = item.flavor.disk_gb + "GB";
+      if(item.flavor.ephemeral_gb > 0) { 
+        disk_size += (" + " + item.flavor.ephemeral_gb + "GB (ephemeral)");
+      }
+      
       var time_slot = {
         id: index,
         parent_id: item.flavor.id,
@@ -87,7 +93,8 @@ var reservationAvailabilty = (function() {
           class: item.flavor.category,
           description: item.flavor.description,
           availability_zone: item.flavor.availability_zone,
-          size: (item.flavor.vcpu + "VCPUs " + item.flavor.memory_mb + "MB RAM"),
+          size: flavor_size,
+          disk:  disk_size,
           max_duration: hoursToDays(item.flavor.max_length_hours) + " days",
           usage_rate: item.flavor.extra_specs["nectar:rate"] ? (item.flavor.extra_specs["nectar:rate"] + " SU/hour") : "FREE",
         }
