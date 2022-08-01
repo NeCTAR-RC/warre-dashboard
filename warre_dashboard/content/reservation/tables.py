@@ -109,6 +109,9 @@ def get_flavor(reservation):
     template_name = 'reservation/_reservation_flavor.html'
     size_ram = sizeformat.mb_float_format(flavor.memory_mb)
     size_disk = sizeformat.diskgbformat(flavor.disk_gb)
+    if flavor.ephemeral_gb > 0:
+        size_ephemeral = sizeformat.diskgbformat(flavor.ephemeral_gb)
+        size_disk = f"{size_disk} + {size_ephemeral}"
     context = {
         "id": reservation.id,
         "name": flavor.name,

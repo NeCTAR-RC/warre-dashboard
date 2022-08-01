@@ -55,6 +55,8 @@
 						<dd>{{ reservation.flavor.memory_mb|mb_float_format }}</dd>
 						<dt>{% trans "Disk" %}</dt>
 						<dd>{{ reservation.flavor.disk_gb }}{% trans "GB" %}</dd>
+						<dt>{% trans "Disk (ephemeral)" %}</dt>
+						<dd>{{ reservation.flavor.ephemeral_gb }}{% trans "GB" %}</dd>
 						<dt class="word-wrap">Max Reservation Length</dt>
 						<dd>{{ reservation.flavor.max_length_hours|div:24 }} days</dd>
 						<dt>Public</dt>
