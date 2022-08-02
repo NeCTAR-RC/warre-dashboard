@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
+
 from django.conf import settings
 from horizon.utils.memoized import memoized
 from keystoneauth1.identity.v3 import Token
@@ -74,9 +76,9 @@ def limits(request):
     limits_dict = {}
     for limit in limits:
         if limit.name == 'maxHours':
-            limits_dict['maxDays'] = int(limit.value / 24)
+            limits_dict['maxDays'] = math.floor(limit.value / 24)
         elif limit.name == 'totalHoursUsed':
-            limits_dict['totalDaysUsed'] = int(limit.value / 24)
+            limits_dict['totalDaysUsed'] = math.ceil(limit.value / 24)
         if limit.value < 0:
             limits_dict[limit.name] = float("inf")
         else:
