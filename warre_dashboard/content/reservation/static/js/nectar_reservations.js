@@ -30,6 +30,10 @@ var reservationAvailabilty = (function() {
   var selected_max_days;
   var selected_max_days_eligible;
   var selected_usage_rate = 0;
+  var reservation_days_remaining;
+  var current_end_datetime;
+  var current_end_date;
+
   // var max_su_eligible = 0;
 
   /* Private function to convert string to number with 2 decimal places */
@@ -56,6 +60,33 @@ var reservationAvailabilty = (function() {
           // Is data object empty?
           if($.trim(data.slots)) {
             resolve(data.slots);
+          }
+          else {
+            reject("Data empty!");
+          }
+        },
+        error: function (error) {
+          reject(error)
+        },
+      });
+    });
+  }
+
+  /* Private function to get flavor availabilty data */
+  function getFlavorData() {
+    var data_start = moment(current_end_date, "DD/MM/YYYY").format('YYYY-MM-DD');
+    var data_end = moment(current_end_date, "DD/MM/YYYY").add(3, "days").format('YYYY-MM-DD');
+
+    var api_url = "/api/warre/flavor-slots/" + selected_flavor + "/?start=" + data_start + "&end=" + data_end;
+
+    return new Promise((resolve, reject) => {
+      $.ajax({
+        url: api_url,
+        type: 'GET',
+        success: function (data) {
+          // Is data object empty?
+          if($.trim(data.slots)) {
+            resolve(data.slots[0]);
           }
           else {
             reject("Data empty!");
@@ -286,7 +317,7 @@ var reservationAvailabilty = (function() {
     var slot = reservation_data.find(obj => {
       return obj.id == slot_id
     });
-    
+    console.log(max_su);
     $("#modal_su_budget").text(max_su);
 
     if(slot) {
@@ -305,6 +336,38 @@ var reservationAvailabilty = (function() {
     }
   }
 
+  /* Private function to display the extend modal */
+  function displayExtendModal() {
+    disableReserveAction(); // Disable form button until eligibilty checks have been executed
+
+    getFlavorData()
+      .then((data) => {
+        var flavor_data = data;
+        //console.log(flavor_data);
+        $("#modal_su_budget").text(max_su);
+
+        if(flavor_data) {
+          selected_days = 0;
+          selected_flavor = flavor_data.flavor.id;
+          selected_usage_rate = flavor_data.flavor.extra_specs["nectar:rate"] ? flavor_data.flavor.extra_specs["nectar:rate"] : 0;
+          selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
+          selected_max_days = hoursToDays(flavor_data.flavor.max_length_hours);
+          checkReservationDays();
+          calculateHours();
+          calculateSU();
+          $("#modal_flavor_title").text(flavor_data.flavor.name);
+          $("#modal_extend_days").text(selected_max_days_eligible + " days");
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+        if(error === "Data empty!") {
+          console.log("The reservation can't be extended because the flavor is not available. You will need to create a new reservation.");
+          //$(".extend-error").show();
+        }
+      });
+  }
+
   /* Private function to convert a flavor usage rate string to a number */
   function getSURate(usage_rate_string) {
     if(usage_rate_string == "FREE") {
@@ -316,26 +379,42 @@ var reservationAvailabilty = (function() {
     }
   }
 
-  /* Private function to check the eligibilty of the reservation input */
-  function checkEligibilty() {
+  /* Private function to disable the reserve button and hide eligibilty status */
+  function disableReserveAction() {
     $("#reserve_btn").addClass("disabled");
     $("#reserve_btn").prop('disabled', true);
     $("#eligibility_status").hide();
     $("#eligibility_message").hide();
+  }
+
+  /* Private function to enable the reserve button and show eligibilty status */
+  function enableReserveAction() {
+    $("#eligibility_status").show();
+    $("#eligibility_message").show();
+    $("#reserve_btn").removeClass("disabled");
+    $("#reserve_btn").prop('disabled', false);
+  }
+
+  /* Private function to check the eligibilty of the reservation input */
+  function checkEligibilty() {
+    disableReserveAction();
     var hours_eligible = calculateHours();
     var usage_eligible = calculateSU();
     
     if(hours_eligible && usage_eligible) {
       $("#eligibility_status").html("<p class='h3 text-success'><span class='fa fa-check'></span> Eligible</p>");
       if(max_su) { $("#eligibility_message").html("<strong>NOTE:</strong> this calculation does not take into account SU usage between now and the reservation start date."); }
-      $("#eligibility_status").show();
-      $("#eligibility_message").show();
-      $("#reserve_btn").removeClass("disabled");
-      $("#reserve_btn").prop('disabled', false);
+      enableReserveAction();
     }
     else {
       if(hours_eligible === false) {
-        $("#eligibility_message").html("The number of selected days exceeds your project's reservation limit. If you require more, please amend your allocation.");
+        if(selected_max_days_eligible <= 0 || selected_days > selected_max_days_eligible) {
+          $("#eligibility_message").html("This flavor can only be reserved for " + selected_max_days + " days from today.");
+        }
+        else {
+          $("#eligibility_message").html("The number of selected days exceeds your project's reservation limit. If you require more, please amend your allocation.");
+        }
+        
       }
       else if(usage_eligible === false) {
         $("#eligibility_message").html("The number of selected days exceeds your project's usage limit. If you require more, please amend your allocation.");
@@ -345,6 +424,21 @@ var reservationAvailabilty = (function() {
       $("#eligibility_status").show();
       $("#eligibility_message").show();
     }
+  }
+
+  /* Private function to determine how many days the project is eligible to extend the flavor for */
+  function checkReservationDays() {
+    console.log(selected_max_days);
+    console.log(reservation_days_remaining);
+    var flavor_max_days_eligible = selected_max_days - reservation_days_remaining;
+    if(flavor_max_days_eligible > 0) {
+      selected_max_days_eligible = Math.min(flavor_max_days_eligible, max_days_eligible);
+    }
+    else {
+      selected_max_days_eligible = 0;
+    }
+    console.log("Flavor days allowed to extend", flavor_max_days_eligible);
+    console.log("Max days allowed for project and flavor", selected_max_days_eligible);
   }
 
   /* Private function to show eligibilty to reserve selected days (was previously hours) */
@@ -367,19 +461,21 @@ var reservationAvailabilty = (function() {
     // $("#hours_progressbar_pending").find(".percentage-used").text(pending_percent + "%");
     
     // Does the project have days remaining and is total below the days limit?
-    if(max_days_eligible && new_percent <= 100) {
+    if(selected_max_days_eligible > 0 && selected_days <= selected_max_days_eligible && new_percent <= 100) {
       $("#hours_progressbar_used").show();
       $("#hours_progressbar_pending").removeClass("progress-bar-danger");
       $("#hours_progressbar_pending").addClass("progress-bar-success");
       return true;
     }
     else {
-      $("#hours_progressbar_used").hide();
-      $("#hours_progressbar_pending").css("width", ("100%"));
-      $("#hours_progressbar_pending").data("aria-valuenow", "100");
-      // $("#hours_progressbar_pending").find(".percentage-used").text(new_percent + "%");
-      $("#hours_progressbar_pending").removeClass("progress-bar-success");
-      $("#hours_progressbar_pending").addClass("progress-bar-danger");
+      if(selected_max_days_eligible > 0 && selected_days <= selected_max_days_eligible) {
+        $("#hours_progressbar_used").hide();
+        $("#hours_progressbar_pending").css("width", ("100%"));
+        $("#hours_progressbar_pending").data("aria-valuenow", "100");
+        // $("#hours_progressbar_pending").find(".percentage-used").text(new_percent + "%");
+        $("#hours_progressbar_pending").removeClass("progress-bar-success");
+        $("#hours_progressbar_pending").addClass("progress-bar-danger");
+      }
       return false; 
     }
   }
@@ -525,6 +621,15 @@ var reservationAvailabilty = (function() {
     $(form_id).submit();
   }
 
+  /* Public function to submit the create reservation form */
+  reservations.extendReservation = function() {
+    var submit_end_val = $('#id_new_end').val();
+    var submit_end_date = submit_end_val + " 23:59";
+    $('#id_new_end').val(submit_end_date);
+    var extend_form = $("#id_new_end").closest("form");
+    if(extend_form) { extend_form.submit(); }
+  }
+
   /* Public function check if project has usage total and budget to display */
   reservations.getUsageData = function() {
     let usage_total = getUsageTotal();
@@ -532,6 +637,37 @@ var reservationAvailabilty = (function() {
     if(usage_total && usage_budget) {
       calculateSU();
     }
+  }
+
+  reservations.showReservation = function() {
+    selected_flavor = $("#reservation_flavor").val();
+    var current_start_str = $("#current_start").val();
+    var current_end_str = $("#current_end").val();
+    var current_start_date = moment(current_start_str, "YYYY-MM-DD[T]HH:mm:ss").format("DD/MM/YYYY");
+    current_end_datetime = moment(current_end_str, "YYYY-MM-DD[T]HH:mm:ss").format("YYYY-MM-DD HH:mm");
+    current_end_date = moment(current_end_str, "YYYY-MM-DD[T]HH:mm:ss").format("DD/MM/YYYY");
+    console.log(current_start_date);
+    const now_date = moment().utc();
+    reservation_days_remaining = moment(current_end_date, "DD/MM/YYYY").diff(now_date, 'days'); // minus 1 day to take us back to 00:00 from 23:59
+    
+    selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
+    var modal_start_date = moment(current_end_date, "DD/MM/YYYY").add(1, "days").format("DD/MM/YYYY");
+
+    $("#id_new_end").datepicker({
+      format: "dd/mm/yyyy",
+      startDate: moment(current_end_date, "DD/MM/YYYY").add(1, "days").format("DD/MM/YYYY"),
+      autoclose: true
+    });
+
+    displayExtendModal();
+
+    $('#id_new_end').on('changeDate', function() {
+      var new_end_date = $('#id_new_end').datepicker('getFormattedDate');
+      selected_days = moment(new_end_date, "DD/MM/YYYY").diff(moment(current_end_date, "DD/MM/YYYY"), 'days');
+      selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
+      updateDateRange(moment(modal_start_date, "DD/MM/YYYY"), moment(new_end_date, "DD/MM/YYYY"));
+    });
+
   }
 
   // Return public functions

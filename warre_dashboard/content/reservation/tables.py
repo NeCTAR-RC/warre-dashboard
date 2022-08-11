@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import logging
 
 from django import http
@@ -61,6 +62,31 @@ class DeleteReservation(policy.PolicyTargetMixin, tables.DeleteAction):
 
     def delete(self, request, obj_id):
         api.reservation_delete(request, obj_id)
+
+
+class ExtendReservation(policy.PolicyTargetMixin, tables.LinkAction):
+    name = "extend"
+    verbose_name = _("Extend Reservation")
+    url = "horizon:project:reservations:extend"
+    classes = ("ajax-modal", "btn-extend")
+    policy_rules = (("reservation", "warre:reservation:extend"),)
+
+    def allowed(self, request, reservation=None):
+        if reservation.status != 'ACTIVE':
+            return False
+
+        limits = api.limits(request)
+        hours_available = limits['maxHours'] - limits['totalHoursUsed']
+        if hours_available <= 0:
+            return False
+
+        now = datetime.datetime.now()
+        max_end = now + datetime.timedelta(
+            hours=reservation.flavor.max_length_hours - 23)
+        if max_end.date() <= reservation.end.date():
+            return False
+
+        return True
 
 
 class CreateReservation(tables.LinkAction):
@@ -180,5 +206,5 @@ class ReservationTable(tables.DataTable):
     class Meta:
         status_columns = ['status']
         table_actions = (CreateReservation, DeleteReservation,)
-        row_actions = (DeleteReservation,)
+        row_actions = (ExtendReservation, DeleteReservation,)
         row_class = UpdateRow

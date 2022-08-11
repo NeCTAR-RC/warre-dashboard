@@ -21,7 +21,7 @@ from warre_dashboard.api import reservation as api
 
 
 @urls.register
-class FlavorSlots(generic.View):
+class FlavorSlotsAll(generic.View):
     """API for Flavor Free slots.
 
     """
@@ -51,6 +51,29 @@ class FlavorSlots(generic.View):
                 slot['flavor'] = flavor.to_dict()
                 total_slots.append(slot)
         return {'slots': total_slots}
+
+
+@urls.register
+class FlavorSlots(generic.View):
+    """API for Flavor Free slots.
+
+    """
+    url_regex = r'warre/flavor-slots/(?P<flavor_id>[^/]+)/$'
+
+    @rest_utils.ajax()
+    def get(self, request, flavor_id):
+        """List flavors and their free slots
+
+        """
+        start = request.GET.get('start')
+        end = request.GET.get('end')
+        flavor = api.flavor_get(request, flavor_id)
+        slots = api.flavor_free_slots(request, flavor_id,
+                                      start=start, end=end)
+        for slot in slots:
+            slot['flavor'] = flavor.to_dict()
+
+        return {'slots': slots}
 
 
 @urls.register

@@ -81,9 +81,15 @@
                     <input type="radio" name="flavor_category" id="flavor_category1" value="" checked> All
                   </label>
                   {% for category in categories %}
-                    <label class="btn btn-sm btn-default">
-                      <input type="radio" name="flavor_category" id="flavor_category{{ forloop.counter }}" value="{{ category }}"> {{ category }}
-                    </label>
+                    {% if category == 'H3' %}
+                      <label class="btn btn-sm btn-default">
+                        <input type="radio" name="flavor_category" id="flavor_category{{ forloop.counter }}" value="H4"> H4
+                      </label>
+                    {% else %}
+                      <label class="btn btn-sm btn-default">
+                        <input type="radio" name="flavor_category" id="flavor_category{{ forloop.counter }}" value="{{ category }}"> {{ category }}
+                      </label>
+                    {% endif %}
                   {% endfor %}
                 </div>
               </form>

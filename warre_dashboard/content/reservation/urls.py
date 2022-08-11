@@ -23,4 +23,6 @@ urlpatterns = [
     url(r'^create/$', views.CreateView.as_view(), name='create'),
     url(r'^(?P<reservation_id>[^/]+)/$',
         views.DetailView.as_view(), name='detail'),
+    url(r'^(?P<reservation_id>[^/]+)/extend/$',
+        views.ExtendView.as_view(), name='extend'),
 ]

@@ -111,7 +111,7 @@ class CreateView(forms.ModalFormView):
     template_name = 'reservation/create.html'
     submit_label = "Create Reservation"
     submit_url = reverse_lazy("horizon:project:reservations:create")
-    success_url = reverse_lazy('horizon:project:reservations:index')
+    success_url = reverse_lazy('horizon:project:reservations:detail')
     page_title = "Create Reservation"
 
     def get_context_data(self, **kwargs):
@@ -175,3 +175,38 @@ class CreateView(forms.ModalFormView):
                 'text': text
             })
         return charts
+
+
+class ExtendView(forms.ModalFormView):
+    form_class = reservation_forms.ExtendForm
+    template_name = 'reservation/extend.html'
+    submit_label = _("Extend Reservation")
+    submit_url = "horizon:project:reservations:extend"
+    success_url = reverse_lazy("horizon:project:reservations:index")
+    page_title = _("Extend Reservation")
+
+    def get_object(self):
+        if not hasattr(self, "_object"):
+            reservation_id = self.kwargs['reservation_id']
+            try:
+                self._object = api.reservation_get(self.request,
+                                                   reservation_id)
+            except Exception:
+                self._object = None
+                exceptions.handle(
+                    self.request,
+                    _('Unable to retrieve reservation information.'))
+        return self._object
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['reservation'] = self.get_object()
+        context['limits'] = api.limits(self.request)
+        args = (self.kwargs['reservation_id'],)
+        context['submit_url'] = reverse(self.submit_url, args=args)
+        return context
+
+    def get_initial(self):
+        reservation = self.get_object()
+        return {'id': self.kwargs['reservation_id'],
+                'orig_end': reservation.end}
