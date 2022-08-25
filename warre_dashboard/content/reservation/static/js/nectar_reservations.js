@@ -47,7 +47,7 @@ var reservationAvailabilty = (function() {
 
   /* Private function to get reservation calendar data */
   function getReservationsData() {
-    const data_start = moment().add(1, 'days').format('YYYY-MM-DD');
+    const data_start = moment().format('YYYY-MM-DD');
     const data_end = moment().add(3, 'months').format('YYYY-MM-DD');
 
     var api_url = "/api/warre/flavor-slots/?category=" + category + "&availability_zone=" + availabilty_zone + "&start=" + data_start + "&end=" + data_end;
@@ -613,7 +613,12 @@ var reservationAvailabilty = (function() {
   /* Public function to submit the create reservation form */
   reservations.createReservation = function() {
     var form_id = "#reserve_form";
-    var start_time = moment(selected_start, 'DD/MM/YYYY').format('YYYY-MM-DD') + " 00:00";
+    if(moment(selected_start, 'DD/MM/YYYY').isSame(moment(), 'day')) {
+      var start_time = moment().add(3, "m").utc().format('YYYY-MM-DD HH:mm');
+    }
+    else {
+      var start_time = moment(selected_start, 'DD/MM/YYYY').format('YYYY-MM-DD') + " 00:00";
+    }
     var end_time = moment(selected_end, 'DD/MM/YYYY').format('YYYY-MM-DD') + " 23:59";
     $(form_id + " input[name='start']").val(start_time);
     $(form_id + " input[name='end']").val(end_time);
