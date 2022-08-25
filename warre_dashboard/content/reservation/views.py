@@ -128,6 +128,10 @@ class CreateView(forms.ModalFormView):
         context['charts'] = self._get_charts_data()
         return context
 
+    def get_success_url_from_handled(self, handled):
+        return reverse('horizon:project:reservations:detail',
+                       args=[handled.id])
+
     def _get_charts_data(self):
         self.usage = get_quota_usages(self.request)
         chart_sections = []
