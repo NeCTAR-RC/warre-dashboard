@@ -51,3 +51,19 @@ class FlavorSlots(generic.View):
                 slot['flavor'] = flavor.to_dict()
                 total_slots.append(slot)
         return {'slots': total_slots}
+
+
+@urls.register
+class Reservation(generic.View):
+    """API for Reservation
+
+    """
+    url_regex = r'warre/reservations/(?P<reservation_id>[^/]+)/$'
+
+    @rest_utils.ajax()
+    def get(self, request, reservation_id):
+        """Get reservation details
+
+        """
+        reservation = api.reservation_get(request, reservation_id)
+        return reservation.to_dict()
