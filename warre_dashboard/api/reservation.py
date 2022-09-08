@@ -70,6 +70,7 @@ def flavor_free_slots(request, flavor_id, start=None, end=None):
         flavor_id, start=start, end=end)
 
 
+@memoized
 def limits(request):
     limits = warreclient(request).limits.get().absolute
 
