@@ -16,7 +16,7 @@ var reservationAvailabilty = (function() {
   // var total_hours_used;
   var max_days = 0;
   var total_days_used = 0;
-  var max_days_eligible = 0;
+  var max_days_eligible = 0; // The project max days remaining 
   var max_reservations;
   var total_reservations_used;
   var max_reservations_eligible;
@@ -24,13 +24,12 @@ var reservationAvailabilty = (function() {
   var total_su_used = 0;
   var selected_start;
   var selected_end;
-  var selected_days;
+  var selected_days; // The number of days selected
   var selected_su;
   var selected_flavor;
-  var selected_max_days;
-  var selected_max_days_eligible;
+  var selected_max_days; // The flavor policy max days
+  var selected_max_days_eligible; // The smaller number of days eligible to book considering flavor and project limits
   var selected_usage_rate = 0;
-  var reservation_days_remaining;
   var current_end_datetime;
   var current_end_date;
 
@@ -47,8 +46,8 @@ var reservationAvailabilty = (function() {
 
   /* Private function to get reservation calendar data */
   function getReservationsData() {
-    const data_start = moment().format('YYYY-MM-DD');
-    const data_end = moment().add(3, 'months').format('YYYY-MM-DD');
+    const data_start = moment().utc().format('YYYY-MM-DD');
+    const data_end = moment().utc().add(3, 'months').format('YYYY-MM-DD');
 
     var api_url = "/api/warre/flavor-slots/?category=" + category + "&availability_zone=" + availabilty_zone + "&start=" + data_start + "&end=" + data_end;
 
@@ -165,8 +164,8 @@ var reservationAvailabilty = (function() {
         $('#reservations_table').show();
         clearTooltips();
         $('#reservations_table').gantt({
-          dtStart: moment().format('DD/MM/YYYY'),
-          dtEnd: moment().add(3, 'months').format('DD/MM/YYYY'),
+          dtStart: moment().utc().format('DD/MM/YYYY'),
+          dtEnd: moment().utc().add(3, 'months').format('DD/MM/YYYY'),
           locale:'en-AU',
           height: 500,
           labelTask: false,
@@ -270,21 +269,35 @@ var reservationAvailabilty = (function() {
 
   /* Private function to update the date range displayed in the tooltip and modal */
   function getDatesFromTable(div_element, pixel_left_pos) {
+    today_utc = moment().utc().format('DD/MM/YYYY');
+    today_local = moment().format('DD/MM/YYYY');  
     slot_start_date = div_element.parent().attr('start');
     slot_end_date = div_element.parent().attr('end');
     slot_available_days = Number(div_element.parent().attr('task_days'));
     selected_max_days = div_element.parent().attr('task_max_days');
-    selected_max_days_eligible = Math.min(max_days_eligible, selected_max_days) - 1; // The smaller number of days eligible to book for the flavor - 1 to hover ending on last day
+    selected_max_days_eligible = Math.min(max_days_eligible, selected_max_days); // The smaller number of days eligible to book for the flavor
+
     var tootltip_id = "#tooltip_" + div_element.parent().attr('task_id');
 
     percentage_of_hover = pixel_left_pos / div_element.width() * 100;
     difference_between_dates = (percentage_of_hover / 100) * slot_available_days;
     days_between_dates = Math.floor(difference_between_dates);
-    
+
     selected_start = moment(slot_start_date, "DD/MM/YYYY").add(days_between_dates, 'days').format("DD/MM/YYYY");
-    
+    if (today_utc == selected_start && today_local != today_utc) {
+	selected_max_days_eligible = selected_max_days_eligible - 1;
+        $(tootltip_id).find(".tooltip-date").text("NOW to " + selected_end);
+    }
+    else if (today_local == selected_start && today_local == today_utc) {
+      $(tootltip_id).find(".tooltip-date").text("NOW to " + selected_end);
+    }
+    else {
+      $(tootltip_id).find(".tooltip-date").text(selected_start + " to " + selected_end);
+    }
+
     if(selected_max_days_eligible <= slot_available_days) {
-      selected_end = moment(selected_start, "DD/MM/YYYY").add(selected_max_days_eligible, 'days').format("DD/MM/YYYY");
+      // We need to minus a day as we include the current day as well  
+      selected_end = moment(selected_start, "DD/MM/YYYY").add(selected_max_days_eligible - 1, 'days').format("DD/MM/YYYY");
       if(moment(selected_end, "DD/MM/YYYY").isAfter(moment(slot_end_date, "DD/MM/YYYY"))) {
         selected_end = moment(slot_end_date, "DD/MM/YYYY").format("DD/MM/YYYY");
       }
@@ -292,12 +305,11 @@ var reservationAvailabilty = (function() {
     else {
       selected_end = moment(slot_end_date, "DD/MM/YYYY").format("DD/MM/YYYY");
     }
-    
-    var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), 'days');
-    selected_days = moment_difference + 1; // to include end date in the duration
+
+    var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), 'days') + 1;
+    selected_days = moment_difference;
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
 
-    $(tootltip_id).find(".tooltip-date").text(selected_start + " to " + selected_end);
     $(tootltip_id).find(".tooltip-days").text(selected_days + " days");
   }
 
@@ -306,7 +318,7 @@ var reservationAvailabilty = (function() {
     selected_start = start.format("DD/MM/YYYY");
     selected_end = end.format("DD/MM/YYYY");
     var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), "days");
-    selected_days = moment_difference + 1; // to include end date in the duration
+    selected_days = moment_difference;
     console.log("su_rate: " + selected_usage_rate + " selected_days: " + selected_days);
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
     checkEligibilty();
@@ -351,7 +363,7 @@ var reservationAvailabilty = (function() {
           selected_flavor = flavor_data.flavor.id;
           selected_usage_rate = flavor_data.flavor.extra_specs["nectar:rate"] ? flavor_data.flavor.extra_specs["nectar:rate"] : 0;
           selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
-          selected_max_days = hoursToDays(flavor_data.flavor.max_length_hours);
+          selected_max_days = Math.floor(hoursToDays(flavor_data.flavor.max_length_hours));
           checkReservationDays();
           calculateHours();
           calculateSU();
@@ -408,19 +420,17 @@ var reservationAvailabilty = (function() {
     }
     else {
       if(hours_eligible === false) {
-        if(selected_max_days_eligible <= 0 || selected_days > selected_max_days_eligible) {
-          $("#eligibility_message").html("This flavor can only be reserved for " + selected_max_days + " days from today.");
-        }
-        else {
-          $("#eligibility_message").html("The number of selected days exceeds your project's reservation limit. If you require more, please amend your allocation.");
-        }
-        
+        // if(new_percent > 100) {
+        //   $("#eligibility_message").html("The number of selected days exceeds your project's reservation limit. If you require more, please amend your allocation.");
+        // }
+        // else {
+          $("#eligibility_message").html("This flavor can only be reserved for " + selected_max_days_eligible + " days.");
+        // }
       }
       else if(usage_eligible === false) {
         $("#eligibility_message").html("The number of selected days exceeds your project's usage limit. If you require more, please amend your allocation.");
       }
       $("#eligibility_status").html("<p class='h3 text-danger'><span class='fa fa-times'></span> Not eligible</p>");
-      
       $("#eligibility_status").show();
       $("#eligibility_message").show();
     }
@@ -428,17 +438,19 @@ var reservationAvailabilty = (function() {
 
   /* Private function to determine how many days the project is eligible to extend the flavor for */
   function checkReservationDays() {
-    console.log(selected_max_days);
-    console.log(reservation_days_remaining);
-    var flavor_max_days_eligible = selected_max_days - reservation_days_remaining;
-    if(flavor_max_days_eligible > 0) {
-      selected_max_days_eligible = Math.min(flavor_max_days_eligible, max_days_eligible);
-    }
-    else {
-      selected_max_days_eligible = 0;
-    }
-    console.log("Flavor days allowed to extend", flavor_max_days_eligible);
+    console.log("selected_max_days", selected_max_days);
+    var utc_now = moment().utc();
+    var max_end_date = utc_now.add(selected_max_days, 'days');
+    selected_max_days = max_end_date.diff(moment(current_end_datetime, "YYYY-MM-DD HH:mm"), 'days');
+    selected_max_days_eligible = Math.min(selected_max_days, max_days_eligible);
+
     console.log("Max days allowed for project and flavor", selected_max_days_eligible);
+  }
+
+  function daysValid() {
+    console.log("selected_days", selected_days);
+    console.log("selected_max_days_eligible", selected_max_days_eligible);
+    return ((selected_max_days_eligible > 0) && (selected_max_days_eligible >= selected_days));
   }
 
   /* Private function to show eligibilty to reserve selected days (was previously hours) */
@@ -461,14 +473,14 @@ var reservationAvailabilty = (function() {
     // $("#hours_progressbar_pending").find(".percentage-used").text(pending_percent + "%");
     
     // Does the project have days remaining and is total below the days limit?
-    if(selected_max_days_eligible > 0 && selected_days <= selected_max_days_eligible && new_percent <= 100) {
+    if(daysValid()) {
       $("#hours_progressbar_used").show();
       $("#hours_progressbar_pending").removeClass("progress-bar-danger");
       $("#hours_progressbar_pending").addClass("progress-bar-success");
       return true;
     }
     else {
-      if(selected_max_days_eligible > 0 && selected_days <= selected_max_days_eligible) {
+      if(new_percent > 100) {
         $("#hours_progressbar_used").hide();
         $("#hours_progressbar_pending").css("width", ("100%"));
         $("#hours_progressbar_pending").data("aria-valuenow", "100");
@@ -589,7 +601,7 @@ var reservationAvailabilty = (function() {
   reservations.setReservationLimits = function(project_max_days = 0, project_days_used = 0, project_max_reservations = 0, project_reservations_used = 0) {
     max_days = project_max_days;
     total_days_used = project_days_used;
-    max_days_eligible = max_days - total_days_used;
+    max_days_eligible = Math.floor(max_days - total_days_used)
 
     max_reservations = project_max_reservations;
     total_reservations_used = project_reservations_used;
@@ -629,7 +641,8 @@ var reservationAvailabilty = (function() {
   /* Public function to submit the create reservation form */
   reservations.extendReservation = function() {
     var submit_end_val = $('#id_new_end').val();
-    var submit_end_date = submit_end_val + " 23:59";
+    var submit_end_date = moment(submit_end_val, "DD/MM/YYYY").format("YYYY-MM-DD") + " 23:59";
+    console.log(submit_end_date);
     $('#id_new_end').val(submit_end_date);
     var extend_form = $("#id_new_end").closest("form");
     if(extend_form) { extend_form.submit(); }
@@ -653,7 +666,6 @@ var reservationAvailabilty = (function() {
     current_end_date = moment(current_end_str, "YYYY-MM-DD[T]HH:mm:ss").format("DD/MM/YYYY");
     console.log(current_start_date);
     const now_date = moment().utc();
-    reservation_days_remaining = moment(current_end_date, "DD/MM/YYYY").diff(now_date, 'days'); // minus 1 day to take us back to 00:00 from 23:59
     
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
     var modal_start_date = moment(current_end_date, "DD/MM/YYYY").add(1, "days").format("DD/MM/YYYY");
@@ -668,9 +680,9 @@ var reservationAvailabilty = (function() {
 
     $('#id_new_end').on('changeDate', function() {
       var new_end_date = $('#id_new_end').datepicker('getFormattedDate');
-      selected_days = moment(new_end_date, "DD/MM/YYYY").diff(moment(current_end_date, "DD/MM/YYYY"), 'days');
-      selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
-      updateDateRange(moment(modal_start_date, "DD/MM/YYYY"), moment(new_end_date, "DD/MM/YYYY"));
+      // selected_days = (moment(new_end_date, "DD/MM/YYYY").diff(moment(current_end_date, "DD/MM/YYYY"), 'days')) + 1; // plus 1 day to take us to 23:59 from 00:00
+      // selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
+      updateDateRange(moment(current_end_date, "DD/MM/YYYY"), moment(new_end_date, "DD/MM/YYYY"));
     });
 
   }
