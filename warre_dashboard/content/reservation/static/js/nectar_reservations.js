@@ -132,7 +132,7 @@ var reservationAvailabilty = (function() {
         // console.log(reservation_data);
         $(".reservations-error").hide();
         $('#reservations_table').show();
-
+        clearTooltips();
         $('#reservations_table').gantt({
           dtStart: moment().format('DD/MM/YYYY'),
           dtEnd: moment().add(3, 'months').format('DD/MM/YYYY'),
@@ -154,6 +154,11 @@ var reservationAvailabilty = (function() {
           $(".reservations-error").show();
         }
       });
+  }
+
+  /* Private function to remove tooltips from the DOM when new slot data is drawn in the table. */
+  function clearTooltips() {
+    $( ".tooltip-gantt" ).remove();
   }
 
   /* Private function to get details of a flavor and return as html formatted string */
