@@ -11,7 +11,7 @@
 
 {% block main %}
 <div class="detail">
-	<a href="{% url 'horizon:project:reservations:index' %}" class="btn btn-link"><i class="fa fa-arrow-left"></i> Back</a>
+        <a href="{% url 'horizon:project:reservations:index' %}" class="btn btn-link"><i class="fa fa-arrow-left"></i> Back</a>
 	<div class="block-title mb-2">
 		<h3>Reservation Details</h3>
 	</div>
@@ -19,22 +19,30 @@
 		<div class="col-xs-12 col-sm-6 col-md-8">
 			<div class="panel panel-default shadow">
 				<div class="panel-body">
-					<h4>{{ reservation.id }}</h4>
+					<h4 id="reservation_id">{{ reservation.id }}</h4>
 					<h5 class="text-secondary"><span class="fa fa-clock-o"></span> {{ reservation.start }} to {{ reservation.end }}</h5>
 					<hr />
-					<dl>
-						<dt>Compute Flavor Name</dt>
-						<dd>reservation:{{ reservation.compute_flavor }}</dd>
-						<dt>Status</dt>
-						<dd>{{ reservation.status }}</dd>
-					</dl>
-					{% if reservation.status == "ALLOCATED" %}
-						<div class="alert alert-info">The reservation will become active on the start date. You will then be able to <strong>launch the instance</strong> on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page.</div>
-					{% elif reservation.status == "ACTIVE" %}
-						<div class="alert alert-success">The reservation is active, you can now <strong>launch the instance</strong> by selecting the <strong>"reservation:{{ reservation.compute_flavor }}"</strong> flavor on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page.</div>
-					{% elif reservation.status == "ERROR" %}
-					<div class="alert alert-danger">{{ reservation.status_reason|default_if_none:"Reservation Error: Please contact Nectar Support." }}</div>
-					{% endif %}
+					<div id="detail_list">
+						<dl>
+							{% if reservation.status == "PENDING_CREATE" %}
+							<div id="create_loader">
+								<div class="loader-inline"><span class="loader fa fa-spinner fa-spin fa-4x text-center"></span><div class="loader-caption h4 text-center">Creating&hellip;</div></div>
+							</div>
+							{% else %}
+								<dt>Compute Flavor Name</dt>
+								<dd>reservation:{{ reservation.compute_flavor }}</dd>
+								<dt>Status</dt>
+								<dd>{{ reservation.status }}</dd>
+							{% endif %}
+						</dl>
+						{% if reservation.status == "ALLOCATED" %}
+							<div class="alert alert-info">The reservation will become active at the start time. You will then be able to <strong>launch the instance</strong> on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page. For more information, check out <a href="https://support.ehelp.edu.au/support/solutions/articles/6000259638-nectar-gpu-service" target="_blank"></a>this support article</a>.</div>
+						{% elif reservation.status == "ACTIVE" %}
+							<div class="alert alert-success">The reservation is now active, you can now <strong>launch the instance</strong> by selecting the <strong>"reservation:{{ reservation.compute_flavor }}"</strong> flavor on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page. For more information, check out <a href="https://support.ehelp.edu.au/support/solutions/articles/6000259638-nectar-gpu-service" target="_blank"></a>this support article</a>.</div>
+						{% elif reservation.status == "ERROR" %}
+							<div class="alert alert-danger">{{ reservation.status_reason|default_if_none:"Reservation Error: Please contact Nectar Support." }}</div>
+						{% endif %}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -77,4 +85,38 @@
     </div>
   </div>
 </div>
+
+<script type="text/javascript">
+	const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+	var progress_bar = $("#create_progress").find(".progress-bar:first");
+	var finished = false;
+	var width = 0;
+
+	async function pollStatus(reservation) {
+
+		while(!finished && width <= 100) {
+			const result = await $.ajax({ url: "/api/warre/reservations/" + reservation });
+			var res_status = result.status ? result.status : "PENDING_CREATE";
+			width += 5;
+			if(res_status != "PENDING_CREATE") {
+				finished = true;
+				// refresh div content
+				$.get(window.location.href, function(data) {
+					var detail_list = jQuery(data).find("#detail_list").html(); 
+					$("body").find("#detail_list").html(detail_list);
+				});
+			}
+			else {
+				await delay(1000);
+			}
+		}
+	}
+	$(document).ready(function() {
+		if($("#create_loader")) {
+			const reservation = $("#reservation_id").text();
+			pollStatus(reservation);
+		}
+	});
+</script>
+
 {% endblock %}
