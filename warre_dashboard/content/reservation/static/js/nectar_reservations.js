@@ -306,8 +306,8 @@ var reservationAvailabilty = (function() {
       selected_end = moment(slot_end_date, "DD/MM/YYYY").format("DD/MM/YYYY");
     }
 
-    var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), 'days') + 1;
-    selected_days = moment_difference;
+    var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), 'days');
+    selected_days = moment_difference + 1;
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
 
     $(tootltip_id).find(".tooltip-days").text(selected_days + " days");
