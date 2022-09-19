@@ -28,6 +28,7 @@ var reservationAvailabilty = (function() {
   var selected_su;
   var selected_flavor;
   var selected_max_days; // The flavor policy max days
+  var selected_max_days_available; // The flavor time slot days available
   var selected_max_days_eligible; // The smaller number of days eligible to book considering flavor and project limits
   var selected_usage_rate = 0;
   var current_end_datetime;
@@ -46,10 +47,9 @@ var reservationAvailabilty = (function() {
 
   /* Private function to get reservation calendar data */
   function getReservationsData() {
-    const data_start = moment().utc().format('YYYY-MM-DD');
     const data_end = moment().utc().add(3, 'months').format('YYYY-MM-DD');
 
-    var api_url = "/api/warre/flavor-slots/?category=" + category + "&availability_zone=" + availabilty_zone + "&start=" + data_start + "&end=" + data_end;
+    var api_url = "/api/warre/flavor-slots/?category=" + category + "&availability_zone=" + availabilty_zone + "&end=" + data_end;
 
     return new Promise((resolve, reject) => {
       $.ajax({
@@ -74,10 +74,10 @@ var reservationAvailabilty = (function() {
   /* Private function to get flavor availabilty data */
   function getFlavorData() {
     var data_start = moment(current_end_date, "DD/MM/YYYY").format('YYYY-MM-DD');
-    var data_end = moment(current_end_date, "DD/MM/YYYY").add(3, "days").format('YYYY-MM-DD');
+    var data_end = moment(current_end_date, "DD/MM/YYYY").add(selected_max_days, "days").format('YYYY-MM-DD');
 
     var api_url = "/api/warre/flavor-slots/" + selected_flavor + "/?start=" + data_start + "&end=" + data_end;
-
+    //console.log(api_url);
     return new Promise((resolve, reject) => {
       $.ajax({
         url: api_url,
@@ -178,7 +178,7 @@ var reservationAvailabilty = (function() {
         activateSlotMouseover();
       })
       .catch((error) => {
-        console.log(error);
+        console.error(error);
         if(error === "Data empty!") {
           $('#reservations_table').hide();
           $(".reservations-error").show();
@@ -284,11 +284,11 @@ var reservationAvailabilty = (function() {
     days_between_dates = Math.floor(difference_between_dates);
 
     selected_start = moment(slot_start_date, "DD/MM/YYYY").add(days_between_dates, 'days').format("DD/MM/YYYY");
-    if (today_utc == selected_start && today_local != today_utc) {
-	selected_max_days_eligible = selected_max_days_eligible - 1;
-        $(tootltip_id).find(".tooltip-date").text("NOW to " + selected_end);
+    if(today_utc == selected_start && today_local != today_utc) {
+	    selected_max_days_eligible = selected_max_days_eligible - 1;
+      $(tootltip_id).find(".tooltip-date").text("NOW to " + selected_end);
     }
-    else if (today_local == selected_start && today_local == today_utc) {
+    else if(today_local == selected_start && today_local == today_utc) {
       $(tootltip_id).find(".tooltip-date").text("NOW to " + selected_end);
     }
     else {
@@ -319,7 +319,7 @@ var reservationAvailabilty = (function() {
     selected_end = end.format("DD/MM/YYYY");
     var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), "days");
     selected_days = moment_difference;
-    console.log("su_rate: " + selected_usage_rate + " selected_days: " + selected_days);
+    //console.log("su_rate: " + selected_usage_rate + " selected_days: " + selected_days);
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
     checkEligibilty();
   }
@@ -329,7 +329,6 @@ var reservationAvailabilty = (function() {
     var slot = reservation_data.find(obj => {
       return obj.id == slot_id
     });
-    console.log(max_su);
     $("#modal_su_budget").text(max_su);
 
     if(slot) {
@@ -359,23 +358,33 @@ var reservationAvailabilty = (function() {
         $("#modal_su_budget").text(max_su);
 
         if(flavor_data) {
+          hideExtendError();
           selected_days = 0;
           selected_flavor = flavor_data.flavor.id;
           selected_usage_rate = flavor_data.flavor.extra_specs["nectar:rate"] ? flavor_data.flavor.extra_specs["nectar:rate"] : 0;
           selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
-          selected_max_days = Math.floor(hoursToDays(flavor_data.flavor.max_length_hours));
-          checkReservationDays();
-          calculateHours();
-          calculateSU();
-          $("#modal_flavor_title").text(flavor_data.flavor.name);
-          $("#modal_extend_days").text(selected_max_days_eligible + " days");
+          selected_start = moment(flavor_data.start, "YYYY-MM-DD[T]HH:mm:ss");//.format("DD/MM/YYYY");
+          selected_end = moment(flavor_data.end, "YYYY-MM-DD[T]HH:mm:ss");//.format("DD/MM/YYYY");
+
+          // Is there a date date between the reservation end date and flavor slot start date?
+          if(selected_start.isAfter(moment(current_end_datetime, "YYYY-MM-DD HH:mm").add(1, "days"))) {
+            // The reservation can't be extended
+            $("#id_new_end").datepicker('hide');
+            showExtendError("The flavor is not available after the reservation end date so the reservation can't be extended. Please create a new reservation.");
+          } 
+          else {
+            // The flavor is available... limits will need to be checked.
+            checkReservationDays();
+            calculateHours();
+            calculateSU();
+          }
         }
       })
       .catch((error) => {
-        console.log(error);
+        console.error(error);
         if(error === "Data empty!") {
-          console.log("The reservation can't be extended because the flavor is not available. You will need to create a new reservation.");
-          //$(".extend-error").show();
+          $("#id_new_end").datepicker('hide');
+          showExtendError("The reservation can't be extended because the flavor is not available. You will need to create a new reservation.");
         }
       });
   }
@@ -438,18 +447,17 @@ var reservationAvailabilty = (function() {
 
   /* Private function to determine how many days the project is eligible to extend the flavor for */
   function checkReservationDays() {
-    console.log("selected_max_days", selected_max_days);
+    selected_max_days_available = moment(selected_end, "YYYY-MM-DD[T]HH:mm:ss").diff(moment(current_end_date, "DD/MM/YYYY"), "days");
     var utc_now = moment().utc();
     var max_end_date = utc_now.add(selected_max_days, 'days');
     selected_max_days = max_end_date.diff(moment(current_end_datetime, "YYYY-MM-DD HH:mm"), 'days');
-    selected_max_days_eligible = Math.min(selected_max_days, max_days_eligible);
-
-    console.log("Max days allowed for project and flavor", selected_max_days_eligible);
+    selected_max_days_eligible = Math.min(selected_max_days_available, selected_max_days, max_days_eligible);
+    $("#modal_extend_days").text(selected_max_days_eligible + " days");
   }
 
   function daysValid() {
-    console.log("selected_days", selected_days);
-    console.log("selected_max_days_eligible", selected_max_days_eligible);
+    //console.log("selected_days", selected_days);
+    //console.log("selected_max_days_eligible", selected_max_days_eligible);
     return ((selected_max_days_eligible > 0) && (selected_max_days_eligible >= selected_days));
   }
 
@@ -536,6 +544,17 @@ var reservationAvailabilty = (function() {
 
   function hideSUCalculator() {
     $("#usage_eligibilty").hide();
+  }
+
+  function hideExtendError() {
+    $("#extend_error").hide();
+    $("#extend_form").show();
+  }
+
+  function showExtendError(e_message) {
+    $("#extend_form").hide();
+    $("#extend_error").text(e_message);
+    $("#extend_error").show();
   }
 
   /* Private function to get the project usage to date from api request */
@@ -642,7 +661,7 @@ var reservationAvailabilty = (function() {
   reservations.extendReservation = function() {
     var submit_end_val = $('#id_new_end').val();
     var submit_end_date = moment(submit_end_val, "DD/MM/YYYY").format("YYYY-MM-DD") + " 23:59";
-    console.log(submit_end_date);
+    //console.log(submit_end_date);
     $('#id_new_end').val(submit_end_date);
     var extend_form = $("#id_new_end").closest("form");
     if(extend_form) { extend_form.submit(); }
@@ -659,20 +678,17 @@ var reservationAvailabilty = (function() {
 
   reservations.showReservation = function() {
     selected_flavor = $("#reservation_flavor").val();
-    var current_start_str = $("#current_start").val();
+    selected_max_days = Math.floor(hoursToDays($("#reservation_flavor_max_hours").val()));
     var current_end_str = $("#current_end").val();
-    var current_start_date = moment(current_start_str, "YYYY-MM-DD[T]HH:mm:ss").format("DD/MM/YYYY");
     current_end_datetime = moment(current_end_str, "YYYY-MM-DD[T]HH:mm:ss").format("YYYY-MM-DD HH:mm");
     current_end_date = moment(current_end_str, "YYYY-MM-DD[T]HH:mm:ss").format("DD/MM/YYYY");
-    console.log(current_start_date);
-    const now_date = moment().utc();
     
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
     var modal_start_date = moment(current_end_date, "DD/MM/YYYY").add(1, "days").format("DD/MM/YYYY");
 
     $("#id_new_end").datepicker({
       format: "dd/mm/yyyy",
-      startDate: moment(current_end_date, "DD/MM/YYYY").add(1, "days").format("DD/MM/YYYY"),
+      startDate: modal_start_date,
       autoclose: true
     });
 
@@ -680,8 +696,6 @@ var reservationAvailabilty = (function() {
 
     $('#id_new_end').on('changeDate', function() {
       var new_end_date = $('#id_new_end').datepicker('getFormattedDate');
-      // selected_days = (moment(new_end_date, "DD/MM/YYYY").diff(moment(current_end_date, "DD/MM/YYYY"), 'days')) + 1; // plus 1 day to take us to 23:59 from 00:00
-      // selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
       updateDateRange(moment(current_end_date, "DD/MM/YYYY"), moment(new_end_date, "DD/MM/YYYY"));
     });
 

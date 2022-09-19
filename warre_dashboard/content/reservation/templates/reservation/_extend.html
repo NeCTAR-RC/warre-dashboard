@@ -25,59 +25,62 @@
     {% if add_to_field %}data-add-to-field="{{ add_to_field }}"{% endif %} {% block form_attrs %}{% endblock %}>
     {% csrf_token %}
     <input type="hidden" id="reservation_flavor" value="{{ reservation.flavor.id }}" />
-    <input type="hidden" id="current_start" value="{{ reservation.start|date:'c' }}" />
+    <input type="hidden" id="reservation_flavor_max_hours" value="{{ reservation.flavor.max_length_hours }}" />
     <input type="hidden" id="current_end" value="{{ reservation.end|date:'c' }}" />
     
     {% block modal-body %}
-      <h3 id="modal_flavor_title" class="text-center">Flavor Name</h3>
-      <p class="text-center">Please select a new end date. You are eligible to extend this reservation for up to <strong id="modal_extend_days">{{ limits.maxDays|sub:limits.totalDaysUsed }} days</strong>, based on the flavor policy and your selected project's reservation limits.</p>
-      <div class="row">
-        <div class="col-sm-6">
-          <h5 class="text-uppercase text-secondary">Alter End Date</h5>
-          <label class="control-label">Current End</label>
-          <p class="form-control text-danger">{{ reservation.end }}</p>
-          {% comment %}
-            Input field #id_new_end converted to date picker in nectar_reservations.js
-          {% endcomment %}
-          {% include "horizon/common/_form_fields.html" %}
-          <h4>+ <span id="modal_total_days"></span></h4>
-          <h5 id="modal_total_su"></h5>
-        </div>
-        <div class="col-sm-6">
-          <div class="panel panel-default bg-light">
-            <div class="panel-body">
-              <h5 class="text-uppercase text-secondary">Eligibility Status</h5>
-              <p>Based on your current usage and project allocation limits.</p>
-              <div id="hours_eligibilty">
-                <p class="h2"><span id="modal_total_days_used">{{ limits.totalDaysUsed }}</span> / <span id="modal_max_days">{{ limits.maxDays }}</span></p>
-                <h6>Total days / Max days</h6>
-                <div class="progress">
-                  <div id="hours_progressbar_used" class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="{{ percentage_used }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ percentage_used }}%" title="Days previously reserved.">
-                    <!-- <span class="percentage-used">{{ percentage_used }}%</span> -->
-                  </div>
-                  <div id="hours_progressbar_pending" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%" title="Days selected.">
-                    <!-- <span class="percentage-used">0%</span> -->
-                  </div>
-                </div>
-              </div>
-              <div id="usage_eligibilty">
-                <p class="h2"><span id="modal_total_su_used"></span> / <span id="modal_su_budget"></span></p>
-                <h6>SU total / SU budget</h6>
-                <div class="progress">
-                  <div id="usage_progressbar_used" class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%" title="SU used to date.">
-                    <!-- <span class="percentage-used">0%</span> -->
-                  </div>
-                  <div id="usage_progressbar_pending" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"  title="SU usage estimate.">
-                    <!-- <span class="percentage-used">0%</span> -->
+      <h3 id="modal_flavor_title" class="text-center">{{ reservation.flavor.name }}</h3>
+      <div id="extend_form">
+        <p class="text-center">Please select a new end date. You are eligible to extend this reservation for up to <strong id="modal_extend_days">{{ limits.maxDays|sub:limits.totalDaysUsed }} days</strong>, based on the flavor policy and your selected project's reservation limits.</p>
+        <div class="row">
+          <div class="col-sm-6">
+            <h5 class="text-uppercase text-secondary">Alter End Date</h5>
+            <label class="control-label">Current End</label>
+            <p class="form-control text-danger">{{ reservation.end }}</p>
+            {% comment %}
+              Input field #id_new_end converted to date picker in nectar_reservations.js
+            {% endcomment %}
+            {% include "horizon/common/_form_fields.html" %}
+            <h4>+ <span id="modal_total_days"></span></h4>
+            <h5 id="modal_total_su"></h5>
+          </div>
+          <div class="col-sm-6">
+            <div class="panel panel-default bg-light">
+              <div class="panel-body">
+                <h5 class="text-uppercase text-secondary">Eligibility Status</h5>
+                <p>Based on your current usage and project allocation limits.</p>
+                <div id="hours_eligibilty">
+                  <p class="h2"><span id="modal_total_days_used">{{ limits.totalDaysUsed }}</span> / <span id="modal_max_days">{{ limits.maxDays }}</span></p>
+                  <h6>Total days / Max days</h6>
+                  <div class="progress">
+                    <div id="hours_progressbar_used" class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="{{ percentage_used }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ percentage_used }}%" title="Days previously reserved.">
+                      <!-- <span class="percentage-used">{{ percentage_used }}%</span> -->
+                    </div>
+                    <div id="hours_progressbar_pending" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%" title="Days selected.">
+                      <!-- <span class="percentage-used">0%</span> -->
+                    </div>
                   </div>
                 </div>
+                <div id="usage_eligibilty">
+                  <p class="h2"><span id="modal_total_su_used"></span> / <span id="modal_su_budget"></span></p>
+                  <h6>SU total / SU budget</h6>
+                  <div class="progress">
+                    <div id="usage_progressbar_used" class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%" title="SU used to date.">
+                      <!-- <span class="percentage-used">0%</span> -->
+                    </div>
+                    <div id="usage_progressbar_pending" class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"  title="SU usage estimate.">
+                      <!-- <span class="percentage-used">0%</span> -->
+                    </div>
+                  </div>
+                </div>
+                <div id="eligibility_status" class="text-center display-none"></div>
+                <p id="eligibility_message" class="text-center display-none"></p>
               </div>
-              <div id="eligibility_status" class="text-center display-none"></div>
-              <p id="eligibility_message" class="text-center display-none"></p>
             </div>
           </div>
         </div>
       </div>
+      <p id="extend_error" class="text-center"></p>
     {% endblock %}
     </form>
   </div>
