@@ -47,7 +47,7 @@ var reservationAvailabilty = (function() {
 
   /* Private function to get reservation calendar data */
   function getReservationsData() {
-    const data_end = moment().utc().add(3, 'months').format('YYYY-MM-DD');
+    const data_end = moment.utc().add(3, 'months').format('YYYY-MM-DD');
 
     var api_url = "/api/warre/flavor-slots/?category=" + category + "&availability_zone=" + availabilty_zone + "&end=" + data_end;
 
@@ -164,8 +164,8 @@ var reservationAvailabilty = (function() {
         $('#reservations_table').show();
         clearTooltips();
         $('#reservations_table').gantt({
-          dtStart: moment().utc().format('DD/MM/YYYY'),
-          dtEnd: moment().utc().add(3, 'months').format('DD/MM/YYYY'),
+          dtStart: moment.utc().format('DD/MM/YYYY'),
+          dtEnd: moment.utc().add(3, 'months').format('DD/MM/YYYY'),
           locale:'en-AU',
           height: 500,
           labelTask: false,
@@ -269,7 +269,7 @@ var reservationAvailabilty = (function() {
 
   /* Private function to update the date range displayed in the tooltip and modal */
   function getDatesFromTable(div_element, pixel_left_pos) {
-    today_utc = moment().utc().format('DD/MM/YYYY');
+    today_utc = moment.utc().format('DD/MM/YYYY');
     today_local = moment().format('DD/MM/YYYY');  
     slot_start_date = div_element.parent().attr('start');
     slot_end_date = div_element.parent().attr('end');
@@ -448,9 +448,11 @@ var reservationAvailabilty = (function() {
   /* Private function to determine how many days the project is eligible to extend the flavor for */
   function checkReservationDays() {
     selected_max_days_available = moment(selected_end, "YYYY-MM-DD[T]HH:mm:ss").diff(moment(current_end_date, "DD/MM/YYYY"), "days");
-    var utc_now = moment().utc();
-    var max_end_date = utc_now.add(selected_max_days, 'days');
-    selected_max_days = max_end_date.diff(moment(current_end_datetime, "YYYY-MM-DD HH:mm"), 'days');
+    var utc_now = moment.utc().format("DD/MM/YYYY");
+    var max_end_date = moment(utc_now, "DD/MM/YYYY").add(selected_max_days, 'days');
+    //console.log("max_end_date", max_end_date.format("DD/MM/YYYY"));
+    var max_days_from_end = max_end_date.diff(moment(current_end_datetime, "YYYY-MM-DD HH:mm"), 'days');
+    selected_max_days = max_days_from_end - 1; // overwrite selected_max_days with new calculation from current end date
     selected_max_days_eligible = Math.min(selected_max_days_available, selected_max_days, max_days_eligible);
     $("#modal_extend_days").text(selected_max_days_eligible + " days");
   }
@@ -644,16 +646,22 @@ var reservationAvailabilty = (function() {
   /* Public function to submit the create reservation form */
   reservations.createReservation = function() {
     var form_id = "#reserve_form";
-    if(moment(selected_start, 'DD/MM/YYYY').isSame(moment(), 'day')) {
-      var start_time = moment().add(3, "m").utc().format('YYYY-MM-DD HH:mm');
+    var utc_now = moment.utc().format("YYYY-MM-DD HH:mm");
+    if(moment(selected_start, "DD/MM/YYYY").isSame(moment(utc_now, "YYYY-MM-DD HH:mm"), "day")) {
+      var start_time = moment(utc_now, "YYYY-MM-DD HH:mm").add(3, "m").format("YYYY-MM-DD HH:mm");
     }
     else {
-      var start_time = moment(selected_start, 'DD/MM/YYYY').format('YYYY-MM-DD') + " 00:00";
+      var start_time = moment(selected_start, "DD/MM/YYYY").format("YYYY-MM-DD") + " 00:00";
     }
-    var end_time = moment(selected_end, 'DD/MM/YYYY').format('YYYY-MM-DD') + " 23:59";
+    var end_time = moment(selected_end, "DD/MM/YYYY").format("YYYY-MM-DD") + " 23:59";
     $(form_id + " input[name='start']").val(start_time);
     $(form_id + " input[name='end']").val(end_time);
     $(form_id + " input[name='flavor']").val(selected_flavor);
+    console.log("utc_now", utc_now);
+    // console.log("selected_start", selected_start);
+    // console.log("selected_end", selected_end);
+    console.log("start_time", start_time);
+    console.log("end_time", end_time);
     $(form_id).submit();
   }
 
