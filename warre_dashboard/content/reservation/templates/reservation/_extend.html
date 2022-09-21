@@ -31,7 +31,7 @@
     {% block modal-body %}
       <h3 id="modal_flavor_title" class="text-center">{{ reservation.flavor.name }}</h3>
       <div id="extend_form">
-        <p class="text-center">Please select a new end date. You are eligible to extend this reservation for up to <strong id="modal_extend_days">{{ limits.maxDays|sub:limits.totalDaysUsed }} days</strong>, based on the flavor policy and your selected project's reservation limits.</p>
+        <p class="text-center">Please select a new end date. You are eligible to extend this reservation for up to <strong id="modal_extend_days">{{ limits.maxDays|sub:limits.totalDaysUsed }} days</strong>, based on the flavor policy, availability and your selected project's reservation limits.</p>
         <div class="row">
           <div class="col-sm-6">
             <h5 class="text-uppercase text-secondary">Alter End Date</h5>
