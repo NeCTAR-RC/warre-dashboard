@@ -14,6 +14,8 @@ var reservationAvailabilty = (function() {
   var availabilty_zone = "";
   // var max_hours;
   // var total_hours_used;
+  var today_utc;
+  var today_local;
   var max_days = 0;
   var total_days_used = 0;
   var max_days_eligible = 0; // The project max days remaining 
@@ -191,6 +193,12 @@ var reservationAvailabilty = (function() {
     $( ".tooltip-gantt" ).remove();
   }
 
+  function isTodayUTC() {
+    today_utc = moment.utc().format('DD/MM/YYYY');
+    today_local = moment().format('DD/MM/YYYY');
+    return today_utc == today_local;
+  }
+
   /* Private function to get details of a flavor and return as html formatted string */
   function getDetails(details) {
 
@@ -229,23 +237,41 @@ var reservationAvailabilty = (function() {
 
   /* Private function to show max days shaded hover block on time slot */
   function activateSlotMouseover() {
-
     $(".div-task").each(function() {
       // Determine max days and set hover block width for each time slot
       selected_max_days = $(this).parent().attr('task_max_days');
       var hover_size = Math.min(max_days_eligible, selected_max_days); // The smaller number of days eligible to book for the flavor
+      var utc_hover_size = hover_size - 1;
       var slot_available_days = Number($(this).parent().attr('task_days'));
-      if(hover_size < slot_available_days) {
-        let slot_hover = $(this).find('.show-hover');
-        let hover_width_percent = hover_size / slot_available_days * 100;
-        slot_hover.css('width', hover_width_percent + "%");
-      }
-    });
-    // Create mousemove event for each time slot div
-    $(".div-task").mousemove(function(e) {
-      var rel_x = e.pageX - $(this).offset().left;
-      showHover($(this), rel_x); // Show hover block on start date of the mouse location
-      getDatesFromTable($(this), rel_x); // Get the time slot hover dates to update tooltip and modal
+      var hover_width_percent = hover_size / slot_available_days * 100;
+      var utc_hover_width_percent = utc_hover_size / slot_available_days * 100;
+      var div_width = $(this).width();
+      var day_width = div_width / slot_available_days;
+      let slot_hover = $(this).find('.show-hover');
+
+      // Create mousemove event for each time slot div
+      $(this).mousemove(function(e) {
+        var div_x = $(this).offset().left;
+        var rel_x = e.pageX - div_x;
+        var second_day_x = day_width;
+        
+        // Consider hover size for UTC today different to local today if user is hovering on now date
+        if(!isTodayUTC() && (rel_x >= 0 && rel_x < second_day_x)) { 
+          if(utc_hover_size < slot_available_days) {
+            // Only adjust hover shadow width if hover days is less than the slot number of days
+            slot_hover.css('width', utc_hover_width_percent + "%");
+          }
+        }
+        else {
+          if(hover_size < slot_available_days) { 
+            // Only adjust hover shadow width if hover days is less than the slot number of days
+            slot_hover.css('width', hover_width_percent + "%");
+          }
+        }
+
+        showHover($(this), rel_x); // Show hover block on start date of the mouse location
+        getDatesFromTable($(this), rel_x); // Get the time slot hover dates to update tooltip and modal
+      });
     });
   }
 
@@ -268,9 +294,7 @@ var reservationAvailabilty = (function() {
   }
 
   /* Private function to update the date range displayed in the tooltip and modal */
-  function getDatesFromTable(div_element, pixel_left_pos) {
-    today_utc = moment.utc().format('DD/MM/YYYY');
-    today_local = moment().format('DD/MM/YYYY');  
+  function getDatesFromTable(div_element, pixel_left_pos) {  
     slot_start_date = div_element.parent().attr('start');
     slot_end_date = div_element.parent().attr('end');
     slot_available_days = Number(div_element.parent().attr('task_days'));
@@ -284,11 +308,11 @@ var reservationAvailabilty = (function() {
     days_between_dates = Math.floor(difference_between_dates);
 
     selected_start = moment(slot_start_date, "DD/MM/YYYY").add(days_between_dates, 'days').format("DD/MM/YYYY");
-    if(today_utc == selected_start && today_local != today_utc) {
+    if(!isTodayUTC() && today_utc == selected_start) {
 	    selected_max_days_eligible = selected_max_days_eligible - 1;
       $(tootltip_id).find(".tooltip-date").text("NOW to " + selected_end);
     }
-    else if(today_local == selected_start && today_local == today_utc) {
+    else if(isTodayUTC() && today_local == selected_start) {
       $(tootltip_id).find(".tooltip-date").text("NOW to " + selected_end);
     }
     else {

@@ -51,7 +51,7 @@ $.fn.gantt = function (options) {
         let date = moment(firstDay, "DD/MM/YYYY").add(i, "days");
         let day = date.format('DD');
         let dayNumber = moment(firstDay, "DD/MM/YYYY").add(i, "days").dayOfYear();
-        if(date.isSame(moment().utc(), 'day')){ // is current day the same as today (UTC time)?
+        if(date.isSame(moment(moment.utc().format('DD'), 'DD'), 'day')){ // is current day the same as today (UTC time)?
             headerDaysTable += `<th class="days today" day_number="${dayNumber}"><p>${day}</p></th>`;
         }
         else {
