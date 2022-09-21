@@ -522,6 +522,11 @@ var reservationAvailabilty = (function() {
         $("#hours_progressbar_pending").removeClass("progress-bar-success");
         $("#hours_progressbar_pending").addClass("progress-bar-danger");
       }
+      else {
+        $("#hours_progressbar_used").show();
+        $("#hours_progressbar_pending").removeClass("progress-bar-danger");
+        $("#hours_progressbar_pending").addClass("progress-bar-success");
+      }
       return false; 
     }
   }
