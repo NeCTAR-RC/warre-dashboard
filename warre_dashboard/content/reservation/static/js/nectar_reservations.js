@@ -475,10 +475,15 @@ var reservationAvailabilty = (function() {
     var utc_now = moment.utc().format("DD/MM/YYYY");
     var max_end_date = moment(utc_now, "DD/MM/YYYY").add(selected_max_days, 'days');
     //console.log("max_end_date", max_end_date.format("DD/MM/YYYY"));
+    var flavor_max_days = selected_max_days;
     var max_days_from_end = max_end_date.diff(moment(current_end_datetime, "YYYY-MM-DD HH:mm"), 'days');
     selected_max_days = max_days_from_end - 1; // overwrite selected_max_days with new calculation from current end date
     selected_max_days_eligible = Math.min(selected_max_days_available, selected_max_days, max_days_eligible);
     $("#modal_extend_days").text(selected_max_days_eligible + " days");
+    if(selected_max_days === 0) {
+      $("#id_new_end").datepicker('hide');
+      showExtendError("You have reserved this flavor for " + flavor_max_days + " days from today (UTC) which is the limit it can be reserved for. You cannot extend further at this time.");
+    }
   }
 
   function daysValid() {
