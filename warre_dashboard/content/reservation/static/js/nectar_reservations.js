@@ -31,6 +31,7 @@ var reservationAvailabilty = (function() {
   var selected_flavor;
   var selected_max_days; // The flavor policy max days
   var selected_max_days_available; // The flavor time slot days available
+  var selected_days_remaining; // The flavor policy days remaining after total days from today to current reservation end date
   var selected_max_days_eligible; // The smaller number of days eligible to book considering flavor and project limits
   var selected_usage_rate = 0;
   var current_end_datetime;
@@ -453,12 +454,7 @@ var reservationAvailabilty = (function() {
     }
     else {
       if(hours_eligible === false) {
-        // if(new_percent > 100) {
-        //   $("#eligibility_message").html("The number of selected days exceeds your project's reservation limit. If you require more, please amend your allocation.");
-        // }
-        // else {
-          $("#eligibility_message").html("This flavor can only be reserved for " + selected_max_days_eligible + " days.");
-        // }
+        $("#eligibility_message").html(getErrorMessage());
       }
       else if(usage_eligible === false) {
         $("#eligibility_message").html("The number of selected days exceeds your project's usage limit. If you require more, please amend your allocation.");
@@ -475,15 +471,14 @@ var reservationAvailabilty = (function() {
     var utc_now = moment.utc().format("DD/MM/YYYY");
     var max_end_date = moment(utc_now, "DD/MM/YYYY").add(selected_max_days, 'days');
     //console.log("max_end_date", max_end_date.format("DD/MM/YYYY"));
-    var flavor_max_days = selected_max_days;
-    var max_days_from_end = max_end_date.diff(moment(current_end_datetime, "YYYY-MM-DD HH:mm"), 'days');
-    selected_max_days = max_days_from_end; // overwrite selected_max_days with new calculation from current end date
-    selected_max_days_eligible = Math.min(selected_max_days_available, selected_max_days, max_days_eligible);
+    selected_days_remaining = max_end_date.diff(moment(current_end_datetime, "YYYY-MM-DD HH:mm"), 'days');
+    ///selected_max_days = max_days_from_end; // overwrite selected_max_days with new calculation from current end date
+    selected_max_days_eligible = Math.min(selected_max_days_available, selected_days_remaining, max_days_eligible);
     $("#modal_extend_days").text(selected_max_days_eligible + " days");
     
-    if(selected_max_days === 0) {
+    if(selected_max_days_eligible === 0) {
       $("#id_new_end").datepicker('hide');
-      showExtendError("You have reserved this flavor for " + flavor_max_days + " days from today (UTC) which is the limit it can be reserved for. You cannot extend further at this time.");
+      showExtendError(getErrorMessage());
     }
   }
 
@@ -592,6 +587,23 @@ var reservationAvailabilty = (function() {
     $("#extend_form").hide();
     $("#extend_error").text(e_message);
     $("#extend_error").show();
+  }
+
+  function getErrorMessage() {
+    var error_message = "";
+    if(max_days_eligible === 0) {
+      error_message = "The reservation can't be extended because the project is out of reservation quota.";
+    }
+    else if(selected_days_remaining === 0) {
+      error_message = "You have reserved this flavor for " + selected_max_days + " days from today (UTC) which is the limit it can be reserved for. You cannot extend further at this time.";
+    }
+    else if(selected_max_days_available === 0) {
+      error_message = "The reservation can't be extended because the flavor is not available. You will need to create a new reservation.";
+    }
+    else {
+      error_message = "This flavor can only be reserved for " + selected_max_days_eligible + " days.";
+    }
+    return error_message;
   }
 
   /* Private function to get the project usage to date from api request */
