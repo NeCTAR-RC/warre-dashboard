@@ -13,16 +13,16 @@
 # limitations under the License.
 
 
-from django.conf.urls import url
+from django.urls import re_path
 
 from warre_dashboard.content.reservation import views
 
 
 urlpatterns = [
-    url('^$', views.IndexView.as_view(), name='index'),
-    url(r'^create/$', views.CreateView.as_view(), name='create'),
-    url(r'^(?P<reservation_id>[^/]+)/$',
-        views.DetailView.as_view(), name='detail'),
-    url(r'^(?P<reservation_id>[^/]+)/extend/$',
-        views.ExtendView.as_view(), name='extend'),
+    re_path('^$', views.IndexView.as_view(), name='index'),
+    re_path(r'^create/$', views.CreateView.as_view(), name='create'),
+    re_path(r'^(?P<reservation_id>[^/]+)/$',
+            views.DetailView.as_view(), name='detail'),
+    re_path(r'^(?P<reservation_id>[^/]+)/extend/$',
+            views.ExtendView.as_view(), name='extend'),
 ]
