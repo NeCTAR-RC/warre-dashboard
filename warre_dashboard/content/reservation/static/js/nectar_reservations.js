@@ -747,6 +747,7 @@ var reservationAvailabilty = (function() {
     });
 
     displayExtendModal();
+    $("#id_new_end").datepicker("show");
 
     $('#id_new_end').on('changeDate', function() {
       var new_end_date = $('#id_new_end').datepicker('getFormattedDate');
