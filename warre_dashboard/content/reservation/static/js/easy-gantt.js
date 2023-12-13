@@ -11,7 +11,7 @@ $.fn.gantt = function (options) {
     let dtStart = moment(options.dtStart, "DD/MM/YYYY"); // Set start of calendar
     let dtEnd = moment(options.dtEnd, "DD/MM/YYYY"); // Set end of calendar
     let countMonth = dtEnd.diff(dtStart, 'month'); // Check number of months between dates
-
+    let timeZone = options.timeZone;
     let firstDay = '01/'+dtStart.format('MM/YYYY') // Get the first day of the start date
     let lastDay = dtEnd.endOf('month').format('DD') +'/'+dtEnd.format("MM/YYYY"); // Get the last day of the end date
     let countDays = 1 + moment(lastDay, "DD/MM/YYYY").diff(moment(firstDay, "DD/MM/YYYY"), 'days'); // checks the number of days between dates
@@ -51,7 +51,7 @@ $.fn.gantt = function (options) {
         let date = moment(firstDay, "DD/MM/YYYY").add(i, "days");
         let day = date.format('DD');
         let dayNumber = moment(firstDay, "DD/MM/YYYY").add(i, "days").dayOfYear();
-        if(date.isSame(moment(moment.utc().format('DD'), 'DD'), 'day')){ // is current day the same as today (UTC time)?
+        if(date.isSame(moment.tz(timeZone), 'day')){ // is current day the same as today (UTC time)?
             headerDaysTable += `<th class="days today" day_number="${dayNumber}"><p>${day}</p></th>`;
         }
         else {

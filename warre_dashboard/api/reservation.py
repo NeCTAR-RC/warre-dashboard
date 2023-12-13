@@ -22,9 +22,6 @@ from keystoneauth1 import session
 from warreclient import client
 
 
-DATETIME_FORMAT = "%Y-%m-%d %H:%M"
-
-
 @memoized
 def warreclient(request, version='1'):
     """Initialization of Warre client."""
@@ -43,8 +40,8 @@ def warreclient(request, version='1'):
 def reservation_create(request, flavor_id, start, end, instance_count=1):
     return warreclient(request).reservations.create(
         flavor_id=flavor_id,
-        start=str(start),
-        end=str(end),
+        start=start.isoformat(),
+        end=end.isoformat(),
         instance_count=instance_count)
 
 
@@ -61,7 +58,7 @@ def reservation_delete(request, reservation_id):
 
 
 def reservation_extend(request, reservation_id, new_end):
-    new_end = new_end.strftime(DATETIME_FORMAT)
+    new_end = new_end.isoformat()
     return warreclient(request).reservations.update(reservation_id,
                                                     end=new_end)
 

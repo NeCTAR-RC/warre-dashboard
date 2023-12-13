@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
-
 from django.forms import ValidationError
 from django.urls import reverse
 from horizon import exceptions
@@ -70,10 +68,8 @@ class ExtendForm(forms.SelfHandlingForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        new_end = cleaned_data.get('new_end').replace(tzinfo=None)
+        new_end = cleaned_data.get('new_end')
         orig_end = self.initial['orig_end']
-        if type(orig_end) == str:
-            orig_end = datetime.strptime(orig_end, api.DATETIME_FORMAT)
         if new_end <= orig_end:
             error_msg = "New end must be greater than current end."
             self._errors['new_end'] = self.error_class([error_msg])

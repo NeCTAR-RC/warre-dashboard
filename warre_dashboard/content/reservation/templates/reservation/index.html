@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% load i18n %}
 {% load static %}
+{% load tz %}
 {% block title %}{% trans "Reservations" %}{% endblock %}
 
 {% block custom_head_js %}
   {{ block.super }}
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script type="text/javascript" src="{% static 'js/nectar_reservations.js'%}"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.45/moment-timezone-with-data-10-year-range.js" integrity="sha512-eIGAol0L0mhBTYexAKVNaH4dvcMTltcXKKMF4wBN/cZPAIOMwIcYsrGzdfuQmPbL/EYqJcxoefqQVjlLS9CR6w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>  <script type="text/javascript" src="{% static 'js/nectar_reservations.js'%}"></script>
 {% endblock %}
 
 {% block main %}
@@ -17,7 +18,9 @@
   <div class="col-sm-12">
     <p>You can reserve high performance resources (GPUs and large memory) on the Nectar cloud, up to the limits for your allocation. Your past and current reservations are listed below. To create a new reservation, select "create reservation".</p>
     <p>For more information about reservations and how to use this service, check out <a href="https://support.ehelp.edu.au/support/solutions/articles/6000258960-nectar-gpu-large-memory-reservation-service" target="_blank">this article</a> on the Nectar Support website.</p>
-    <p class="alert alert-info"><strong>NOTE:</strong> All times are displayed in <strong>UTC time</strong>.<p>
+    <p class="alert alert-info">
+      Your timezone is set to <strong>"{{ TIME_ZONE }}"</strong>. You can update your timezone in the <a href="{% url 'horizon:settings:user:index' %}">user settings</a>.
+    </p>
   </div>
 </div>
 {{ table.render }}

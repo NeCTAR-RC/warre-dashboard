@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load i18n %}
 {% load static %}
+{% load tz %}
 {% block title %}{% trans "Create Reservation" %}{% endblock %}
 
 {% block page_header %}
@@ -16,7 +17,7 @@
 {% block custom_head_js %}
   {{ block.super }}
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-daterangepicker/3.0.5/daterangepicker.min.js" integrity="sha512-mh+AjlD3nxImTUGisMpHXW03gE6F4WdQyvuFRkjecwuWLwD2yCijw4tKA3NsEFpA1C3neiKhGXPSIGSfCYPMlQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.45/moment-timezone-with-data-10-year-range.js" integrity="sha512-eIGAol0L0mhBTYexAKVNaH4dvcMTltcXKKMF4wBN/cZPAIOMwIcYsrGzdfuQmPbL/EYqJcxoefqQVjlLS9CR6w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-daterangepicker/3.0.5/daterangepicker.min.js" integrity="sha512-mh+AjlD3nxImTUGisMpHXW03gE6F4WdQyvuFRkjecwuWLwD2yCijw4tKA3NsEFpA1C3neiKhGXPSIGSfCYPMlQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="{% static 'js/easy-gantt.js'%}"></script>
   <script type="text/javascript" src="{% static 'js/nectar_reservations.js'%}"></script>
 {% endblock %}
@@ -52,6 +53,9 @@
               <p>H4 instance come with RAM starting from h4.xsmall with 180G to the h4.xxlarge with 1920G.</p>
             </div>
           </div>
+          <p class="alert alert-info">
+            Your timezone is set to <strong>"{{ TIME_ZONE }}"</strong>. You can update your timezone in the <a href="{% url 'horizon:settings:user:index' %}">user settings</a>.
+          </p>
         </div>
       </div>
     </div>
@@ -106,7 +110,6 @@
               </form>
             </div>
           </div>
-          <p class="alert alert-info"><strong>NOTE:</strong> All times are displayed in <strong>UTC time</strong>.</p>
           <div id="reservations_table"></div>
           <div class="alert alert-warning text-center reservations-error">There are no available time slots for this selection.</div>
         </div>
@@ -189,6 +192,7 @@
 
 <script>
   $(document).ready(function() {
+    reservationAvailabilty.setTimezone("{{ TIME_ZONE }}");
     reservationAvailabilty.setReservationLimits({{ limits.maxDays }}, {{ limits.totalDaysUsed }}, {{ limits.maxReservations }}, {{ limits.maxHours }});
     reservationAvailabilty.getUsageData();
     reservationAvailabilty.showSlots();
