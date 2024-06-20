@@ -120,8 +120,8 @@ var reservationAvailabilty = (function() {
         parent_id: item.flavor.id,
         title: item.flavor.name,
         name: item.flavor.name,
-        date_start: moment(item.start).tz(time_zone).format('DD/MM/YYYY'),
-        date_end: moment(item.end).tz(time_zone).format('DD/MM/YYYY'),
+        date_start: moment.utc(item.start).format('DD/MM/YYYY'),
+        date_end: moment.utc(item.end).format('DD/MM/YYYY'),
         color: '#81d033',
         details: {
           class: item.flavor.category,
@@ -153,7 +153,7 @@ var reservationAvailabilty = (function() {
       new_format.push(time_slot);
       index++;
     });
-    console.log(new_format);
+    // console.log(new_format);
     return new_format;
   }
 
@@ -744,7 +744,7 @@ var reservationAvailabilty = (function() {
     var submit_end_date = moment(submit_end_val, "DD/MM/YYYY").format("YYYY-MM-DD") + " 23:59";
     //console.log(submit_end_date);
     $('#id_new_end').val(submit_end_date);
-    console.log(submit_end_date);
+    // console.log(submit_end_date);
     var extend_form = $("#id_new_end").closest("form");
     if(extend_form) { extend_form.submit(); }
   }
