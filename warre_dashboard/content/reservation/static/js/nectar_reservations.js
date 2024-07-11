@@ -120,8 +120,8 @@ var reservationAvailabilty = (function() {
         parent_id: item.flavor.id,
         title: item.flavor.name,
         name: item.flavor.name,
-        date_start: moment.utc(item.start).format('DD/MM/YYYY'),
-        date_end: moment.utc(item.end).format('DD/MM/YYYY'),
+        date_start: getLocalStartDay(item.start),
+        date_end: getLocalEndDay(item.end),
         color: '#81d033',
         details: {
           class: item.flavor.category,
@@ -161,9 +161,9 @@ var reservationAvailabilty = (function() {
   function displayReservationsTable() {
     getReservationsData()
       .then((data) => {
-        // console.log(data);
+        console.log(data);
         reservation_data = formatSlotData(data);
-        // console.log(reservation_data);
+        console.log(reservation_data);
         $(".reservations-error").hide();
         $('#reservations_table').show();
         clearTooltips();
@@ -201,6 +201,48 @@ var reservationAvailabilty = (function() {
   //   today_local = moment.tz(time_zone).format('DD/MM/YYYY');
   //   return today_utc == today_local;
   // }
+
+  function getLocalStartDay(start_time) {
+    var today = moment.tz(time_zone);
+    var utc_start_day = moment.utc(start_time).format("DD/MM/YYYY");
+
+    if(moment(start_time).isSame(today, "day")) {
+      // Start from now
+      local_start_day = today.format("DD/MM/YYYY");
+    }
+    else {
+      // Start in future
+      if(moment(utc_start_day, "DD/MM/YYYY").isBefore(start_time, 'day')) {
+        // UTC before
+        var local_start_day = moment(start_time).subtract(1, "days").format("DD/MM/YYYY");
+      }
+      else if(moment(utc_start_day, "DD/MM/YYYY").isAfter(start_time, 'day')) {
+        // UTC after
+        var local_start_day = moment(start_time).add(1, "days").format("DD/MM/YYYY");
+      }
+      else {
+        var local_start_day = utc_start_day;
+      }
+    }
+    return local_start_day;
+  }
+
+
+  function getLocalEndDay(end_time) {
+    var utc_end_day = moment.utc(end_time).format("DD/MM/YYYY");
+    if(moment(utc_end_day, "DD/MM/YYYY").isBefore(end_time, 'day')) {
+      // UTC before
+      var local_end_day = moment(end_time).subtract(1, "days").format("DD/MM/YYYY");
+    }
+    else if(moment(utc_end_day, "DD/MM/YYYY").isAfter(end_time, 'day')) {
+      // UTC after
+      var local_end_day = moment(end_time).add(1, "days").format("DD/MM/YYYY");
+    }
+    else {
+      var local_end_day = utc_end_day;
+    }
+    return local_end_day;
+  }
 
   /* Private function to get details of a flavor and return as html formatted string */
   function getDetails(details) {
@@ -411,9 +453,8 @@ var reservationAvailabilty = (function() {
     getFlavorData()
       .then((data) => {
         var flavor_data = data;
-        //console.log(flavor_data);
+        // console.log(flavor_data);
         $("#modal_su_budget").text(max_su);
-
         if(flavor_data) {
           hideExtendError();
           selected_days = 0;
