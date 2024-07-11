@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytz
+
 from django.contrib.humanize.templatetags import humanize as humanize_filters
 from django.urls import reverse
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from horizon import exceptions
@@ -126,6 +129,12 @@ class CreateView(forms.ModalFormView):
         context['categories'] = list(set(
             [f.category for f in flavors if f.category]))
         context['charts'] = self._get_charts_data()
+
+        now = timezone.now().replace(tzinfo=pytz.utc)
+        context['start_time'] = now.replace(hour=0, minute=0, second=0,
+                                            microsecond=0)
+        context['end_time'] = now.replace(hour=23, minute=59, second=0,
+                                          microsecond=0)
         return context
 
     def get_success_url_from_handled(self, handled):
