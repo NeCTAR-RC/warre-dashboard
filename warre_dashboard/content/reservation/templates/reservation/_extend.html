@@ -1,5 +1,6 @@
 {% extends "horizon/common/_modal_form.html" %}
 {% load i18n %}
+{% load tz %}
 {% load mathfilters %}
 
 {% block modal_id %}extend_reservation_modal{% endblock %}
@@ -95,6 +96,7 @@
 {% block modal-js %}
 <script type="text/javascript">
   $(document).ready(function() {
+    reservationAvailabilty.setTimezone("{{ TIME_ZONE }}");
     reservationAvailabilty.setReservationLimits({{ limits.maxDays }}, {{ limits.totalDaysUsed }}, {{ limits.maxReservations }}, {{ limits.maxHours }});
     reservationAvailabilty.getUsageData();
     reservationAvailabilty.showReservation();

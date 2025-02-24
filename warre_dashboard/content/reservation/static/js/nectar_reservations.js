@@ -463,8 +463,8 @@ var reservationAvailabilty = (function() {
           selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
           selected_start = moment(flavor_data.start, "YYYY-MM-DD[T]HH:mm:ss");//.format("DD/MM/YYYY");
           selected_end = moment(flavor_data.end, "YYYY-MM-DD[T]HH:mm:ss");//.format("DD/MM/YYYY");
-
-          // Is there a date date between the reservation end date and flavor slot start date?
+          
+          // Is there a date between the reservation end date and flavor slot start date?
           if(selected_start.isAfter(moment(current_end_datetime, "YYYY-MM-DD HH:mm").add(1, "days"))) {
             // The reservation can't be extended
             $("#id_new_end").datepicker('hide');
@@ -781,11 +781,11 @@ var reservationAvailabilty = (function() {
 
   /* Public function to submit the create reservation form */
   reservations.extendReservation = function() {
+    var utc_time = moment.utc("23:59", "HH:mm"); // Convert the UTC end time string to a moment object
+    var timezone_time = utc_time.tz(time_zone).format("HH:mm"); // Convert the UTC time to the specified timezone   
     var submit_end_val = $('#id_new_end').val();
-    var submit_end_date = moment(submit_end_val, "DD/MM/YYYY").format("YYYY-MM-DD") + " 23:59";
-    //console.log(submit_end_date);
+    var submit_end_date = submit_end_val + " " + timezone_time;
     $('#id_new_end').val(submit_end_date);
-    // console.log(submit_end_date);
     var extend_form = $("#id_new_end").closest("form");
     if(extend_form) { extend_form.submit(); }
   }
