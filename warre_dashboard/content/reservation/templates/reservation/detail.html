@@ -11,13 +11,13 @@
 
 {% block main %}
 <div class="detail">
-  <a href="{% url 'horizon:project:reservations:index' %}" class="btn btn-link"><i class="fa fa-arrow-left"></i> Back</a>
+  <a href="{% url 'horizon:project:reservations:index' %}" class="btn btn-back mb-3">Back</a>
 	<div class="block-title mb-2">
 		<h3>Reservation Details</h3>
 	</div>
 	<div class="row">
 		<div class="col-xs-12 col-sm-6 col-md-8">
-			<div class="panel panel-default shadow">
+			<div class="panel panel-default">
 				<div class="panel-body">
 					<h4 id="reservation_id">{{ reservation.id }}</h4>
 					<h5 class="text-secondary"><span class="fa fa-clock-o"></span> {{ reservation.start }} to {{ reservation.end }}</h5>
@@ -47,7 +47,7 @@
 			</div>
 		</div>
 		<div class="col-xs-12 col-sm-6 col-md-4">
-			<div class="panel panel-default shadow">
+			<div class="panel panel-default">
 				<div class="panel-heading">Flavor Specs</div>
 				<div class="panel-body">
 					<dl class="dl-horizontal">

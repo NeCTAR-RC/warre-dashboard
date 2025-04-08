@@ -24,13 +24,13 @@
 
 {% block main %}
 <div id="create_reservation_page" class="mb-5">
-  <a href="{% url 'horizon:project:reservations:index' %}" class="btn btn-link"><i class="fa fa-arrow-left"></i> Back</a>
+  <a href="{% url 'horizon:project:reservations:index' %}" class="btn btn-back mb-3">Back</a>
   <div class="block-title mb-2">
     <h3>Create Reservation</h3>
   </div>
   <div class="row">
     <div class="col-xs-12 col-md-6">
-      <div class="panel panel-default shadow">
+      <div class="panel panel-default">
         <div class="panel-body">
           <p>To make a reservation, select an available time slot from the table below. You can customise the reservation start and end dates within the available time slot. Reservations are specified in days and must be a minimum of 1 day. All flavors have a maximum number of days they can be reserved for, which is shown in the flavor details.</p>
           <h4>Available Flavor Classes</h4>
@@ -40,15 +40,15 @@
             <li><a data-toggle="tab" href="#h4">H4</a></li>
           </ul>
           <div class="tab-content">
-            <div id="g1" class="tab-pane fade in active">
+            <div id="g1" class="tab-pane my-3 fade in active">
 	            <h5>G1 - Visualisation GPU</h5>
               <p>G1 instances come with Nvidia A40s which brings state-of-the-art features for ray-traced rendering, simulation and virtual production.</p>
             </div>
-            <div id="g2" class="tab-pane fade">
+            <div id="g2" class="tab-pane my-3 fade">
 	            <h5>G2 - Compute GPU</h5>
               <p>G2 instances come with the latest generation Nvidia A100 GPUs and provide the highest performance for machine learning training and high performance computing in the cloud.</p>
             </div>
-            <div id="h4" class="tab-pane fade">
+            <div id="h4" class="tab-pane my-3 fade">
               <h5>H4 - Large RAM</h5>
               <p>H4 instance come with RAM starting from h4.xsmall with 180G to the h4.xxlarge with 1920G.</p>
             </div>
@@ -61,7 +61,7 @@
     </div>
     <div class="col-xs-12 col-md-6">
       {% include "reservation/_reservation_limits.html" %}
-      <div class="panel panel-default shadow">
+      <div class="panel panel-default">
         <div class="panel-heading">Usage Limit</div>
         <div class="panel-body">
           <div id="usage_stats">
@@ -73,7 +73,7 @@
   </div>
   <div class="row">
     <div class="col-sm-12">
-      <div class="panel panel-default shadow">
+      <div class="panel panel-default">
         <div class="panel-heading">Select Flavor Availabilty</div>
         <div class="panel-body">
           <div class="d-md-flex align-items-center justify-content-between mb-4">
@@ -133,7 +133,7 @@
           <div class="col-sm-6">
             <h5 class="text-uppercase text-secondary">Confirm Dates</h5>
             <p>How long do you want to reserve?</p>
-            <input type="text" id="date_selector" class="form-control" name="daterange" />
+            <input type="text" id="date_selector" class="form-control my-3" name="daterange" />
             <h4 id="modal_total_days"></h4>
             <h5 id="modal_total_su"></h5>
             <div class="alert alert-info text-center"><span class="fa fa-info-circle"></span> Reservations created with today's date as the start date will begin in a few minutes from now. All future reservations will begin at {{ start_time|date:"P e" }} and end at {{ end_time|date:"P e" }}.</div>

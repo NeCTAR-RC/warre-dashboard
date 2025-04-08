@@ -77,7 +77,7 @@ var reservationAvailabilty = (function() {
 
   /* Private function to get flavor availabilty data */
   function getFlavorData() {
-    var data_start = moment(current_end_date, "DD/MM/YYYY").format('YYYY-MM-DD');
+    var data_start = moment(current_end_date, "DD/MM/YYYY").format('YYYY-MM-DD'); //TODO
     var data_end = moment(current_end_date, "DD/MM/YYYY").add(selected_max_days, "days").format('YYYY-MM-DD');
 
     var api_url = "/api/warre/flavor-slots/" + selected_flavor + "/?start=" + data_start + "&end=" + data_end;
@@ -122,7 +122,7 @@ var reservationAvailabilty = (function() {
         name: item.flavor.name,
         date_start: getLocalStartDay(item.start),
         date_end: getLocalEndDay(item.end),
-        color: '#81d033',
+        color: '#39833e',
         details: {
           class: item.flavor.category,
           description: item.flavor.description,
@@ -208,7 +208,7 @@ var reservationAvailabilty = (function() {
 
     if(moment(start_time).isSame(today, "day")) {
       // Start from now
-      local_start_day = today.format("DD/MM/YYYY");
+      var local_start_day = today.format("DD/MM/YYYY");
     }
     else {
       // Start in future
@@ -267,6 +267,9 @@ var reservationAvailabilty = (function() {
       endDate: selected_end,
       minDate: slot_start,
       maxDate: slot_end,
+      minSpan: {
+        "days": 1
+      },
       maxSpan: {
         "days": (selected_max_days_eligible - 1)
       },
@@ -361,8 +364,6 @@ var reservationAvailabilty = (function() {
       selected_end = moment(slot_end_date, "DD/MM/YYYY").format("DD/MM/YYYY");
     }
 
-    // var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), 'days');
-    // selected_days = moment_difference + 1;
     setReservationTimes();
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
 
@@ -373,8 +374,6 @@ var reservationAvailabilty = (function() {
   function updateDateRange(start, end) {
     selected_start = start.format("DD/MM/YYYY");
     selected_end = end.format("DD/MM/YYYY");
-    // var moment_difference = moment(selected_end, "DD/MM/YYYY").diff(moment(selected_start, "DD/MM/YYYY"), "days");
-    // selected_days = moment_difference + 1;
     setReservationTimes();
     //console.log("su_rate: " + selected_usage_rate + " selected_days: " + selected_days);
     selected_su = convertToFloat((selected_usage_rate * 24) * selected_days);
@@ -385,40 +384,37 @@ var reservationAvailabilty = (function() {
   function setReservationTimes() {
     var today = moment.tz(time_zone);
     var utc_now = moment.utc();
-    var timezone_offset = moment.tz(time_zone).utcOffset();
+    var utc_start = moment.utc("00:00", "HH:mm"); // Convert the UTC end time string to a moment object
+    var utc_end = moment.utc("23:59", "HH:mm"); // Convert the UTC end time string to a moment object
+    var timezone_start = utc_start.tz(time_zone).format("HH:mm"); // Convert the UTC time to the specified timezone
+    var timezone_end = utc_end.tz(time_zone).format("HH:mm"); // Convert the UTC time to the specified timezone
+    var moment_difference = moment.tz(selected_end, "DD/MM/YYYY", time_zone).diff(moment.tz(selected_start, "DD/MM/YYYY", time_zone), 'days');
+    selected_days = +moment_difference.toFixed(2) + 1; // Add 1 day because end time makes it a minute short of 24hrs
+    
     if(moment(selected_start, "DD/MM/YYYY").isSame(today, "day")) {
       // Start from now
       start_time = moment.tz(time_zone).add(3, "m").format("YYYY-MM-DD HH:mm");
-      if(moment(utc_now.format("YYYY-MM-DD")).isBefore(today.format("YYYY-MM-DD"), 'day')) {
+      if(moment(utc_now.format("YYYY-MM-DD")).isBefore(moment(start_time, "YYYY-MM-DD HH:mm"), 'day')) {
         // UTC before
-        var utc_end = moment(selected_end, "DD/MM/YYYY").subtract(1, "days").format("DD/MM/YYYY");
-      }
-      else if(moment(utc_now.format("YYYY-MM-DD")).isAfter(today.format("YYYY-MM-DD"), 'day')) {
-        // UTC after
-        var utc_end = moment(selected_end, "DD/MM/YYYY").add(1, "days").format("DD/MM/YYYY");
+        end_time = moment(selected_end, "DD/MM/YYYY").subtract(1, "days").format("YYYY-MM-DD") + " " + timezone_end;
       }
       else {
-        var utc_end = selected_end;
+        end_time = moment(selected_end, "DD/MM/YYYY").format("YYYY-MM-DD") + " " + timezone_end;
       }
-      // Add the timezone offset to make sure all reservations end at 23:59 UTC
-      end_time = moment.utc(utc_end + " 23:59", "DD/MM/YYYY HH:mm").add(timezone_offset, "m").format("YYYY-MM-DD HH:mm");
     }
     else {
       // Start in future
-      // Add the timezone offset to make sure all reservations start at 00:00 UTC
-      start_time = moment.utc(selected_start + " 00:00", "DD/MM/YYYY HH:mm").add(timezone_offset, "m").format("YYYY-MM-DD HH:mm");
-      // Add the timezone offset to make sure all reservations end at 23:59 UTC
-      end_time = moment.utc(selected_end + " 23:59", "DD/MM/YYYY HH:mm").add(timezone_offset, "m").format("YYYY-MM-DD HH:mm");
+      start_time = moment.utc(selected_start, "DD/MM/YYYY").format("YYYY-MM-DD") + " " + timezone_start;
+      end_time = moment(selected_end, "DD/MM/YYYY").format("YYYY-MM-DD") + " " + timezone_end;
     }
-    var moment_difference = (moment.duration(moment(end_time).diff(moment(start_time)))).asDays();
-    selected_days = +moment_difference.toFixed(2);
+
     // console.log("time_zone", time_zone);
     // console.log("utc_now", utc_now.format("DD/MM/YYYY"));
-    // console.log("timezone_offset", timezone_offset);
     // console.log("selected_start", selected_start);
     // console.log("selected_end", selected_end);
     // console.log("start_time", start_time);
     // console.log("end_time", end_time);
+    // console.log("moment_difference", moment_difference);
     // console.log("selected_days", (selected_days));
   }
 
@@ -557,7 +553,7 @@ var reservationAvailabilty = (function() {
   function daysValid() {
     //console.log("selected_days", selected_days);
     //console.log("selected_max_days_eligible", selected_max_days_eligible);
-    return ((selected_max_days_eligible > 0) && (selected_max_days_eligible >= selected_days));
+    return ((selected_max_days_eligible > 0) && (selected_max_days_eligible >= selected_days) && selected_days > 0);
   }
 
   /* Private function to show eligibilty to reserve selected days (was previously hours) */
@@ -673,7 +669,7 @@ var reservationAvailabilty = (function() {
       error_message = "The reservation can't be extended because the flavor is not available. You will need to create a new reservation.";
     }
     else {
-      error_message = "This flavor can only be reserved for " + selected_max_days_eligible + " days.";
+      error_message = "This flavor can only be reserved for 1 - " + selected_max_days_eligible + " days.";
     }
     return error_message;
   }
@@ -784,7 +780,7 @@ var reservationAvailabilty = (function() {
     var utc_time = moment.utc("23:59", "HH:mm"); // Convert the UTC end time string to a moment object
     var timezone_time = utc_time.tz(time_zone).format("HH:mm"); // Convert the UTC time to the specified timezone   
     var submit_end_val = $('#id_new_end').val();
-    var submit_end_date = submit_end_val + " " + timezone_time;
+    var submit_end_date = moment(submit_end_val, "DD/MM/YYYY").format("YYYY-MM-DD") + " " + timezone_time;
     $('#id_new_end').val(submit_end_date);
     var extend_form = $("#id_new_end").closest("form");
     if(extend_form) { extend_form.submit(); }
