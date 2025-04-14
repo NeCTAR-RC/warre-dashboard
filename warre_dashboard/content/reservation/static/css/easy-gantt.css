@@ -74,7 +74,7 @@ table.tb-gantt thead th:nth-child(1) {/*first cell in the header*/
 
 table.tb-gantt tbody tr th:nth-child(1) {  /*the first cell in each tr*/
     min-height: 20px;
-    background-color: #99dae7;
+    background-color: #def9ff;
     color: black;
     font-weight: normal;
     position: relative;
@@ -140,7 +140,7 @@ table.tb-gantt tbody .td-tasks > .border-radius-right{
 }
 
 table.tb-gantt tbody .td-tasks > .div-task .show-hover{
-    background-color: #000000;
+    background-color: #ffffff;
     opacity: 0;
     position: absolute;
     top: 0;
@@ -151,7 +151,7 @@ table.tb-gantt tbody .td-tasks > .div-task .show-hover{
 }
 
 table.tb-gantt tbody .td-tasks > .div-task:hover .show-hover{
-    opacity: 0.3;
+    opacity: 0.5;
 }
 
 @media(max-width: 767px) {
