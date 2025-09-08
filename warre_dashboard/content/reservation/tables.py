@@ -20,6 +20,7 @@ from django import template
 from django import urls
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext_lazy
 from django.utils.translation import pgettext_lazy
 from horizon import messages
 from horizon import tables
@@ -39,7 +40,7 @@ class DeleteReservation(policy.PolicyTargetMixin, tables.DeleteAction):
 
     @staticmethod
     def action_present(count):
-        return _(
+        return ngettext_lazy(
             "Delete Reservation",
             "Delete Reservations",
             count
@@ -47,7 +48,7 @@ class DeleteReservation(policy.PolicyTargetMixin, tables.DeleteAction):
 
     @staticmethod
     def action_past(count):
-        return _(
+        return ngettext_lazy(
             "Scheduled deletion of Reservation",
             "Scheduled deletion of Reservations",
             count
