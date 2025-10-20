@@ -384,8 +384,8 @@ var reservationAvailabilty = (function() {
   function setReservationTimes() {
     var today = moment.tz(time_zone);
     var utc_now = moment.utc();
-    var utc_start = moment.utc("00:00", "HH:mm"); // Convert the UTC end time string to a moment object
-    var utc_end = moment.utc("23:59", "HH:mm"); // Convert the UTC end time string to a moment object
+    var utc_start = moment.utc(selected_start + "00:00:00", "DD/MM/YYYY HH:mm"); // Convert the UTC start time string to a moment object
+    var utc_end = moment.utc(selected_end + "23:59:00", "DD/MM/YYYY HH:mm"); // Convert the UTC end time string to a moment object
     var timezone_start = utc_start.tz(time_zone).format("HH:mm"); // Convert the UTC time to the specified timezone
     var timezone_end = utc_end.tz(time_zone).format("HH:mm"); // Convert the UTC time to the specified timezone
     var moment_difference = moment.tz(selected_end, "DD/MM/YYYY", time_zone).diff(moment.tz(selected_start, "DD/MM/YYYY", time_zone), 'days');
@@ -394,19 +394,12 @@ var reservationAvailabilty = (function() {
     if(moment(selected_start, "DD/MM/YYYY").isSame(today, "day")) {
       // Start from now
       start_time = moment.tz(time_zone).add(3, "m").format("YYYY-MM-DD HH:mm");
-      if(moment(utc_now.format("YYYY-MM-DD")).isBefore(moment(start_time, "YYYY-MM-DD HH:mm"), 'day')) {
-        // UTC before
-        end_time = moment(selected_end, "DD/MM/YYYY").subtract(1, "days").format("YYYY-MM-DD") + " " + timezone_end;
-      }
-      else {
-        end_time = moment(selected_end, "DD/MM/YYYY").format("YYYY-MM-DD") + " " + timezone_end;
-      }
     }
     else {
       // Start in future
       start_time = moment.utc(selected_start, "DD/MM/YYYY").format("YYYY-MM-DD") + " " + timezone_start;
-      end_time = moment(selected_end, "DD/MM/YYYY").format("YYYY-MM-DD") + " " + timezone_end;
     }
+    end_time = moment(selected_end, "DD/MM/YYYY").add(1, "days").format("YYYY-MM-DD") + " " + timezone_end;
 
     // console.log("time_zone", time_zone);
     // console.log("utc_now", utc_now.format("DD/MM/YYYY"));
