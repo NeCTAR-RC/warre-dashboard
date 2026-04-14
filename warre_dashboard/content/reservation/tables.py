@@ -64,6 +64,37 @@ class DeleteReservation(policy.PolicyTargetMixin, tables.DeleteAction):
         api.reservation_delete(request, obj_id)
 
 
+class LaunchInstance(tables.LinkAction):
+    name = "launch_instance"
+    verbose_name = _("Launch Instance")
+    url = "horizon:project:instances:index"
+    classes = ("btn-launch",)
+    ajax = False
+    icon = "cloud-upload"
+    policy_rules = (("compute", "os_compute_api:servers:create"),)
+
+    def __init__(self, attrs=None, **kwargs):
+        kwargs['preempt'] = True
+        super().__init__(attrs, **kwargs)
+
+    def allowed(self, request, reservation=None):
+        if reservation:
+            return reservation.status == 'ACTIVE'
+        return False
+
+    def get_link_url(self, datum):
+        url = urls.reverse(self.url)
+        ngclick = (
+            "modal.openLaunchInstanceWizard("
+            "{successUrl: '%s', flavorId: '%s'})" % (url, datum.compute_flavor)
+        )
+        self.attrs.update({
+            "ng-controller": "LaunchInstanceModalController as modal",
+            "ng-click": ngclick
+        })
+        return "javascript:void(0);"
+
+
 class ExtendReservation(policy.PolicyTargetMixin, tables.LinkAction):
     name = "extend"
     verbose_name = _("Extend Reservation")
@@ -206,5 +237,5 @@ class ReservationTable(tables.DataTable):
     class Meta:
         status_columns = ['status']
         table_actions = (CreateReservation, DeleteReservation,)
-        row_actions = (ExtendReservation, DeleteReservation,)
+        row_actions = (LaunchInstance, ExtendReservation, DeleteReservation,)
         row_class = UpdateRow

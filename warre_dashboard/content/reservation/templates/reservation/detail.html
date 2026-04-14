@@ -38,7 +38,13 @@
 						{% if reservation.status == "ALLOCATED" %}
 							<div class="alert alert-info">The reservation will become active at the start time. You will then be able to <strong>launch the instance</strong> on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page. For more information, check out <a href="https://support.ehelp.edu.au/support/solutions/articles/6000259638-nectar-gpu-service" target="_blank"></a>this support article</a>.</div>
 						{% elif reservation.status == "ACTIVE" %}
-							<div class="alert alert-success">The reservation is now active, you can now <strong>launch the instance</strong> by selecting the <strong>"reservation:{{ reservation.compute_flavor }}"</strong> flavor on the <a href="{% url 'horizon:project:instances:index' %}">Instances</a> page. For more information, check out <a href="https://support.ehelp.edu.au/support/solutions/articles/6000259638-nectar-gpu-service" target="_blank"></a>this support article</a>.</div>
+							<div class="alert alert-success">The reservation is now active. For more information, check out <a href="https://support.ehelp.edu.au/support/solutions/articles/6000259638-nectar-gpu-service" target="_blank">this support article</a>.</div>
+							<a class="btn btn-primary"
+							   ng-controller="LaunchInstanceModalController as modal"
+							   ng-click="modal.openLaunchInstanceWizard({successUrl: '{% url 'horizon:project:instances:index' %}', flavorId: '{{ reservation.compute_flavor }}'})"
+							   href="javascript:void(0);">
+							   <span class="fa fa-cloud-upload"></span> Launch Instance
+							</a>
 						{% elif reservation.status == "ERROR" %}
 							<div class="alert alert-danger">{{ reservation.status_reason|default_if_none:"Reservation Error: Please contact Nectar Support." }}</div>
 						{% endif %}
@@ -81,31 +87,25 @@
 
 <script type="text/javascript">
 	const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-	var progress_bar = $("#create_progress").find(".progress-bar:first");
-	var finished = false;
-	var width = 0;
+	const MAX_POLL_ATTEMPTS = 60;
 
 	async function pollStatus(reservation) {
-
-		while(!finished && width <= 100) {
+		for(var attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
 			const result = await $.ajax({ url: "/api/warre/reservations/" + reservation });
 			var res_status = result.status ? result.status : "PENDING_CREATE";
-			width += 5;
 			if(res_status != "PENDING_CREATE") {
-				finished = true;
 				// refresh div content
 				$.get(window.location.href, function(data) {
-					var detail_list = jQuery(data).find("#detail_list").html(); 
+					var detail_list = jQuery(data).find("#detail_list").html();
 					$("body").find("#detail_list").html(detail_list);
 				});
+				return;
 			}
-			else {
-				await delay(1000);
-			}
+			await delay(1000);
 		}
 	}
 	$(document).ready(function() {
-		if($("#create_loader")) {
+		if($("#create_loader").length) {
 			const reservation = $("#reservation_id").text();
 			pollStatus(reservation);
 		}
