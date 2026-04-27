@@ -49,6 +49,24 @@ var reservationAvailabilty = (function() {
     return Math.floor(Number(str_num) / 24);
   }
 
+  /* Private function to get maintenance windows */
+  function getMaintenanceWindows() {
+    return new Promise((resolve) => {
+      $.ajax({
+        url: "/api/warre/maintenance-windows/",
+        type: 'GET',
+        success: function (data) {
+          resolve(data.windows || []);
+        },
+        error: function (error) {
+          // Don't fail the whole table if maintenance windows can't be fetched
+          console.error(error);
+          resolve([]);
+        },
+      });
+    });
+  }
+
   /* Private function to get reservation calendar data */
   function getReservationsData() {
     const data_end = moment.tz(time_zone).add(3, 'months').format('YYYY-MM-DD');
@@ -102,20 +120,39 @@ var reservationAvailabilty = (function() {
     });
   }
 
-  /* Private function to format the data to display correctly in the table */
-  function formatSlotData(object_data) {
+  /* Private function to build the flavor info shown in the row-header
+     collapsible and tooltip for a flavor slot. */
+  function buildFlavorDetails(flavor) {
+    var flavor_size = flavor.vcpu + "VCPUs " + flavor.memory_mb + "MB RAM";
+    var disk_size = flavor.disk_gb + "GB";
+    if(flavor.ephemeral_gb > 0) {
+      disk_size += (" + " + flavor.ephemeral_gb + "GB (ephemeral)");
+    }
+    return {
+      class: flavor.category,
+      description: flavor.description,
+      availability_zone: flavor.availability_zone,
+      size: flavor_size,
+      disk: disk_size,
+      max_duration: hoursToDays(flavor.max_length_hours) + " days",
+      usage_rate: flavor.extra_specs["nectar:rate"] ? (flavor.extra_specs["nectar:rate"] + " SU/hour") : "FREE",
+    };
+  }
+
+  /* Private function to format the data to display correctly in the table.
+     Slots and maintenance windows for the same flavor are placed on the same
+     row by sorting them chronologically and chaining them via the leader's
+     dep field (the format easy-gantt expects). */
+  function formatSlotData(object_data, maintenance_data) {
 
     let new_format = [];
     let index = 1;
+    let known_flavors = {};
 
     object_data.forEach(item => {
-      var flavor_size = item.flavor.vcpu + "VCPUs " + item.flavor.memory_mb + "MB RAM";
-      var disk_size = item.flavor.disk_gb + "GB";
-      if(item.flavor.ephemeral_gb > 0) {
-        disk_size += (" + " + item.flavor.ephemeral_gb + "GB (ephemeral)");
-      }
+      known_flavors[item.flavor.id] = item.flavor;
 
-      var time_slot = {
+      new_format.push({
         id: index,
         parent_id: item.flavor.id,
         title: item.flavor.name,
@@ -123,47 +160,71 @@ var reservationAvailabilty = (function() {
         date_start: getLocalStartDay(item.start),
         date_end: getLocalEndDay(item.end),
         color: '#39833e',
-        details: {
-          class: item.flavor.category,
-          description: item.flavor.description,
-          availability_zone: item.flavor.availability_zone,
-          size: flavor_size,
-          disk:  disk_size,
-          max_duration: hoursToDays(item.flavor.max_length_hours) + " days",
-          usage_rate: item.flavor.extra_specs["nectar:rate"] ? (item.flavor.extra_specs["nectar:rate"] + " SU/hour") : "FREE",
-        }
-      };
-
-      if(new_format.some(el => el.parent_id === item.flavor.id)) {
-        let slot = new_format.find((o, i) => {
-          if(o.parent_id === item.flavor.id) {
-            const dep_string = new_format[i].dep ? new_format[i].dep : "";
-            // console.log(dep_string);
-            let dep_array = dep_string !== "" ? dep_string.split(",") : [];
-            // console.log(dep_array);
-            dep_array.push(index);
-            new_format[i].dep = dep_array.toString();
-
-            return true; // stop searching
-          }
-        });
-        // console.log(slot);
-      }
-
-      new_format.push(time_slot);
+        details: buildFlavorDetails(item.flavor)
+      });
       index++;
     });
-    // console.log(new_format);
+
+    // Add a maintenance task per affected flavor. A window with an empty
+    // flavors list applies to every known flavor; otherwise only the listed
+    // flavors are affected. Each maintenance task may end up as the row
+    // leader if it's the earliest event for a flavor, so we also stash the
+    // flavor info as header_details for easy-gantt to use in the row-header
+    // collapsible (the bar's own tooltip continues to show `note`).
+    (maintenance_data || []).forEach(window => {
+      let target_flavors = (window.flavors && window.flavors.length > 0)
+        ? window.flavors
+        : Object.values(known_flavors);
+      target_flavors.forEach(flavor => {
+        let resolved = known_flavors[flavor.id] || flavor;
+        new_format.push({
+          id: "maint_" + window.id + "_" + flavor.id,
+          parent_id: flavor.id,
+          title: resolved.name || flavor.name || flavor.id,
+          name: "Maintenance",
+          date_start: getLocalStartDay(window.start),
+          date_end: getLocalEndDay(window.end),
+          color: '#f0ad4e',
+          details: {
+            note: window.note || "-"
+          },
+          header_details: known_flavors[flavor.id] ? buildFlavorDetails(known_flavors[flavor.id]) : null
+        });
+      });
+    });
+
+    // Group by parent (flavor), sort each group chronologically, and rebuild
+    // the dep chain so the earliest task is the row leader.
+    let groups = {};
+    new_format.forEach(task => {
+      (groups[task.parent_id] = groups[task.parent_id] || []).push(task);
+    });
+    Object.keys(groups).forEach(parent_id => {
+      let group = groups[parent_id];
+      group.sort((a, b) => moment(a.date_start, "DD/MM/YYYY")
+                                 .diff(moment(b.date_start, "DD/MM/YYYY")));
+      group.forEach(t => { delete t.dep; });
+      if (group.length > 1) {
+        group[0].dep = group.slice(1).map(t => t.id).join(",");
+      }
+    });
+
     return new_format;
   }
 
   /* Private function to render the reservations table */
   function displayReservationsTable() {
-    getReservationsData()
-      .then((data) => {
-        console.log(data);
-        reservation_data = formatSlotData(data);
-        console.log(reservation_data);
+    Promise.all([
+      getReservationsData().catch(err => err === "Data empty!" ? [] : Promise.reject(err)),
+      getMaintenanceWindows()
+    ])
+      .then(([slots_data, maintenance_data]) => {
+        if(slots_data.length === 0) {
+          $('#reservations_table').hide();
+          $(".reservations-error").show();
+          return;
+        }
+        reservation_data = formatSlotData(slots_data, maintenance_data);
         $(".reservations-error").hide();
         $('#reservations_table').show();
         clearTooltips();
@@ -184,10 +245,6 @@ var reservationAvailabilty = (function() {
       })
       .catch((error) => {
         console.error(error);
-        if(error === "Data empty!") {
-          $('#reservations_table').hide();
-          $(".reservations-error").show();
-        }
       });
   }
 
@@ -286,6 +343,12 @@ var reservationAvailabilty = (function() {
   /* Private function to show max days shaded hover block on time slot */
   function activateSlotMouseover() {
     $(".div-task").each(function() {
+      // Skip maintenance window bars: they aren't reservable
+      var parent_task_id = ($(this).parent().attr('task_id') || '').toString();
+      if (parent_task_id.startsWith("maint_")) {
+        $(this).css('cursor', 'not-allowed');
+        return;
+      }
       // Determine max days and set hover block width for each time slot
       selected_max_days = $(this).parent().attr('task_max_days');
       var hover_size = Math.min(max_days_eligible, selected_max_days); // The smaller number of days eligible to book for the flavor
@@ -414,6 +477,10 @@ var reservationAvailabilty = (function() {
 
   /* Private function to display the reserve modal */
   function displayReserveModal(slot_id) {
+    if (typeof slot_id === 'string' && slot_id.indexOf('maint_') === 0) {
+      // Clicking a maintenance bar should not open the reservation modal
+      return;
+    }
     var slot = reservation_data.find(obj => {
       return obj.id == slot_id
     });

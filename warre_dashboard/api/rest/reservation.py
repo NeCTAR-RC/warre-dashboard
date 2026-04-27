@@ -77,6 +77,32 @@ class FlavorSlots(generic.View):
 
 
 @urls.register
+class MaintenanceWindows(generic.View):
+    """API for Maintenance Windows.
+
+    """
+    url_regex = r'warre/maintenance-windows/$'
+
+    @rest_utils.ajax()
+    def get(self, request):
+        """List upcoming maintenance windows."""
+        windows = api.maintenance_window_list(request)
+        return {'windows': [
+            {
+                'id': w.id,
+                'start': w.start.isoformat() if w.start else None,
+                'end': w.end.isoformat() if w.end else None,
+                'note': getattr(w, 'note', None),
+                'flavors': [
+                    {'id': f.get('id'), 'name': f.get('name')}
+                    for f in (getattr(w, 'flavors', []) or [])
+                ],
+            }
+            for w in windows
+        ]}
+
+
+@urls.register
 class Reservation(generic.View):
     """API for Reservation
 

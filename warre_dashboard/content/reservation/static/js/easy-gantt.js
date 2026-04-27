@@ -81,25 +81,26 @@ $.fn.gantt = function (options) {
         let labelT = (options.labelTask)? taskName: '';
         let classTd = (index % 2 == 0)? 'td-bg1': 'td-bg2';
         let details = (task.details)? task.details : '';
+        let headerDetails = (task.header_details)? task.header_details : details;
         let tooltipGantt = `<div class="tooltip-gantt" id="tooltip_${taskId}">
                                 <strong>${taskName}</strong><br>
-                                <span class="tooltip-date">${d1} to ${d2}</span><br>
+                                <span class="tooltip-date">${d1.format('DD/MM/YYYY')} to ${d2.format('DD/MM/YYYY')}</span><br>
                                 <span class="tooltip-days">${daysCount} days</span>
                                 <hr>
                                 <div class="small">${detailsMarkup(details)}</div>
                                 </div>`;
-        
+
         $('body').append(tooltipGantt);
-        
+
 
         if(deps.indexOf(task.id.toString()) < 0 && task.date_start && task.date_end) {
 
             var tasksTable = '<tr>';
-            
-            if(details) {
+
+            if(headerDetails) {
                 tasksTable += `<th><p data-toggle="collapse" class="h5 collapsed" data-target="#details_${parentId}">${titleName}</p>`;
                 tasksTable += '<div class="collapse" id="details_' + parentId + '">';
-                tasksTable += detailsMarkup(details);
+                tasksTable += detailsMarkup(headerDetails);
                 tasksTable += '</div></th>';
             }
             else {
@@ -182,7 +183,7 @@ $.fn.gantt = function (options) {
             let start = moment(task.date_start, "DD/MM/YYYY").format('DD/MM/YYYY');
             let end = moment(task.date_end, "DD/MM/YYYY").format('DD/MM/YYYY');
             let tooltipDesc = (task.tooltip_desc)? task.tooltip_desc: '';
-            let maxDuration = (task.details.max_duration).split(" ")[0]; // Get the number from first part of string containing "days" as a prefix
+            let maxDuration = (task.details.max_duration || "0").split(" ")[0]; // Get the number from first part of string containing "days" as a prefix
             tdCell +=   `<td class="${classTd} td-tasks" start="${start}" end="${end}" task_id="${task.id}" task_name="${taskName}" task_days="${originQtdColspan}" task_max_days="${maxDuration}" tooltip_desc="${tooltipDesc}" colspan="${qtdColspan}">
                             <div class="div-task ${borderRadius}" style="background-color: ${taskColor};">${labelT}<span class="show-hover"></span></div>
                         </td>`;
@@ -272,7 +273,7 @@ $.fn.gantt = function (options) {
                         let detailsS = (val.details)? val.details : '';
                         let tooltipGanttS = `<div class="tooltip-gantt" id="tooltip_${taskIdS}">
                                                 <strong>${taskNameS}</strong><br>
-                                                <span class="tooltip-date">${d1S} to ${d2S}</span><br>
+                                                <span class="tooltip-date">${d1S.format('DD/MM/YYYY')} to ${d2S.format('DD/MM/YYYY')}</span><br>
                                                 <span class="tooltip-days">${daysCountS} days</span>
                                                 <hr>
                                                 <div class="small">${detailsMarkup(detailsS)}</div>
