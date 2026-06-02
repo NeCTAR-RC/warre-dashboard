@@ -176,6 +176,13 @@ var reservationAvailabilty = (function() {
         ? window.flavors
         : Object.values(known_flavors);
       target_flavors.forEach(flavor => {
+        // Only show maintenance windows for flavors that survived the
+        // category/availability_zone filter (i.e. have a slot row). Otherwise
+        // a window with an explicit flavors list would re-introduce rows for
+        // flavors the user has filtered out.
+        if (!known_flavors[flavor.id]) {
+          return;
+        }
         let resolved = known_flavors[flavor.id] || flavor;
         new_format.push({
           id: "maint_" + window.id + "_" + flavor.id,
