@@ -48,6 +48,19 @@
 						{% elif reservation.status == "ERROR" %}
 							<div class="alert alert-danger">{{ reservation.status_reason|default_if_none:"Reservation Error: Please contact Nectar Support." }}</div>
 						{% endif %}
+						{% if calendar_links %}
+						<div class="btn-group">
+							<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+								<span class="fa fa-calendar"></span> {% trans "Add to Calendar" %} <span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu">
+								<li><a href="{% url 'horizon:project:reservations:calendar' reservation.id %}">{% trans "Download .ics file (Apple Calendar, Outlook desktop)" %}</a></li>
+								<li><a href="{{ calendar_links.google }}" target="_blank" rel="noopener">{% trans "Google Calendar" %}</a></li>
+								<li><a href="{{ calendar_links.outlook_office }}" target="_blank" rel="noopener">{% trans "Outlook (work or school)" %}</a></li>
+								<li><a href="{{ calendar_links.outlook_live }}" target="_blank" rel="noopener">{% trans "Outlook.com (personal)" %}</a></li>
+							</ul>
+						</div>
+						{% endif %}
 					</div>
 				</div>
 			</div>

@@ -25,4 +25,6 @@ urlpatterns = [
             views.DetailView.as_view(), name='detail'),
     re_path(r'^(?P<reservation_id>[^/]+)/extend/$',
             views.ExtendView.as_view(), name='extend'),
+    re_path(r'^(?P<reservation_id>[^/]+)/calendar\.ics$',
+            views.CalendarView.as_view(), name='calendar'),
 ]

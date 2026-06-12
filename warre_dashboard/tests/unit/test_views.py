@@ -15,6 +15,8 @@
 import datetime
 from unittest import mock
 
+from django.urls import reverse
+import icalendar
 from openstack_dashboard.test import helpers as test
 
 from warre_dashboard.api import reservation as api
@@ -90,6 +92,42 @@ class DetailViewTests(test.TestCase):
             self.assertRaises(ValueError, view.get_data)
         mock_handle.assert_called_once()
 
+    @test.create_mocks({api: ['reservation_get']})
+    def test_get_context_data_calendar_links(self):
+        flavor = mock.Mock()
+        flavor.name = 'GPU A100'
+        reservation = mock.Mock(
+            id='res-1',
+            status='ACTIVE',
+            start=datetime.datetime(2026, 6, 15, 1, 0),
+            end=datetime.datetime(2026, 6, 17, 1, 0),
+            flavor=flavor)
+        self.mock_reservation_get.return_value = reservation
+
+        view = views.DetailView()
+        # build_absolute_uri needs a real WSGI request, not the bare
+        # HttpRequest that helpers provide as self.request.
+        view.request = self.factory.get('/project/reservations/res-1/')
+        view.kwargs = {'reservation_id': 'res-1'}
+
+        context = view.get_context_data()
+        links = context['calendar_links']
+        self.assertIn('calendar.google.com', links['google'])
+        self.assertIn('outlook.office.com', links['outlook_office'])
+        self.assertIn('outlook.live.com', links['outlook_live'])
+
+    @test.create_mocks({api: ['reservation_get']})
+    def test_get_context_data_no_calendar_links_when_complete(self):
+        reservation = mock.Mock(id='res-1', status='COMPLETE')
+        self.mock_reservation_get.return_value = reservation
+
+        view = views.DetailView()
+        view.request = self.request
+        view.kwargs = {'reservation_id': 'res-1'}
+
+        context = view.get_context_data()
+        self.assertNotIn('calendar_links', context)
+
 
 class CreateViewTests(test.TestCase):
 
@@ -147,3 +185,38 @@ class ExtendViewTests(test.TestCase):
         self.assertEqual({'id': 'res-1', 'orig_end': end}, initial)
         self.mock_reservation_get.assert_called_once_with(
             self.request, 'res-1')
+
+
+class CalendarViewTests(test.TestCase):
+
+    @test.create_mocks({api: ['reservation_get']})
+    def test_calendar_download(self):
+        flavor = mock.Mock()
+        flavor.name = 'GPU A100'
+        reservation = mock.Mock(
+            id='res-1',
+            status='ACTIVE',
+            start=datetime.datetime(2026, 6, 15, 1, 0),
+            end=datetime.datetime(2026, 6, 17, 1, 0),
+            flavor=flavor)
+        self.mock_reservation_get.return_value = reservation
+
+        url = reverse('horizon:project:reservations:calendar',
+                      args=['res-1'])
+        request = self.factory.get(url)
+        response = views.CalendarView.as_view()(request,
+                                                reservation_id='res-1')
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('text/calendar; charset=utf-8',
+                         response['Content-Type'])
+        self.assertIn('nectar-reservation-res-1.ics',
+                      response['Content-Disposition'])
+
+        cal = icalendar.Calendar.from_ical(response.content)
+        events = [c for c in cal.subcomponents if c.name == 'VEVENT']
+        self.assertEqual(1, len(events))
+        self.assertEqual('nectar-reservation-res-1@testserver',
+                         str(events[0]['UID']))
+        self.mock_reservation_get.assert_called_once_with(
+            mock.ANY, 'res-1')

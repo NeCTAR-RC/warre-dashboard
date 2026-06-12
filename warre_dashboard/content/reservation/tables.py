@@ -28,6 +28,7 @@ from horizon.templatetags import sizeformat
 from openstack_dashboard import policy
 
 from warre_dashboard.api import reservation as api
+from warre_dashboard.content.reservation import calendar_export
 
 
 LOG = logging.getLogger(__name__)
@@ -118,6 +119,18 @@ class ExtendReservation(policy.PolicyTargetMixin, tables.LinkAction):
             return False
 
         return True
+
+
+class AddToCalendar(tables.LinkAction):
+    name = "calendar"
+    verbose_name = _("Add to Calendar")
+    url = "horizon:project:reservations:calendar"
+    icon = "calendar"
+
+    def allowed(self, request, reservation=None):
+        if reservation:
+            return reservation.status in calendar_export.CALENDAR_STATUSES
+        return False
 
 
 class CreateReservation(tables.LinkAction):
@@ -237,5 +250,6 @@ class ReservationTable(tables.DataTable):
     class Meta:
         status_columns = ['status']
         table_actions = (CreateReservation, DeleteReservation,)
-        row_actions = (LaunchInstance, ExtendReservation, DeleteReservation,)
+        row_actions = (LaunchInstance, ExtendReservation, AddToCalendar,
+                       DeleteReservation,)
         row_class = UpdateRow

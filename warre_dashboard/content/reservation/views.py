@@ -15,11 +15,13 @@
 import pytz
 
 from django.contrib.humanize.templatetags import humanize as humanize_filters
+from django import http
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
+from django.views import generic
 from horizon import exceptions
 from horizon import forms
 from horizon import tables
@@ -29,6 +31,7 @@ from openstack_dashboard.usage import quotas
 from openstack_dashboard.usage import views as usage_views
 
 from warre_dashboard.api import reservation as api
+from warre_dashboard.content.reservation import calendar_export
 from warre_dashboard.content.reservation import forms as reservation_forms
 from warre_dashboard.content.reservation import tables as reservation_tables
 
@@ -57,7 +60,20 @@ class DetailView(views.HorizonTemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['reservation'] = self.get_data()
+        reservation = self.get_data()
+        context['reservation'] = reservation
+        if reservation.status in calendar_export.CALENDAR_STATUSES:
+            detail_url = self.request.build_absolute_uri(
+                reverse('horizon:project:reservations:detail',
+                        args=[reservation.id]))
+            context['calendar_links'] = {
+                'google': calendar_export.google_calendar_url(
+                    reservation, detail_url),
+                'outlook_office': calendar_export.outlook_calendar_url(
+                    reservation, detail_url),
+                'outlook_live': calendar_export.outlook_calendar_url(
+                    reservation, detail_url, personal=True),
+            }
         return context
 
     @memoized.memoized_method
@@ -70,6 +86,28 @@ class DetailView(views.HorizonTemplateView):
                               'Unable to retrieve reservation details.',
                               redirect=reverse(INDEX_URL))
         return reservation
+
+
+class CalendarView(generic.View):
+    """Download a reservation as an iCalendar (.ics) file."""
+
+    def get(self, request, reservation_id):
+        try:
+            reservation = api.reservation_get(request, reservation_id)
+        except Exception:
+            exceptions.handle(request,
+                              'Unable to retrieve reservation details.',
+                              redirect=reverse(INDEX_URL))
+        detail_url = request.build_absolute_uri(
+            reverse('horizon:project:reservations:detail',
+                    args=[reservation_id]))
+        content = calendar_export.generate_ics(
+            reservation, detail_url, request.get_host())
+        response = http.HttpResponse(
+            content, content_type='text/calendar; charset=utf-8')
+        response['Content-Disposition'] = (
+            f'attachment; filename="nectar-reservation-{reservation_id}.ics"')
+        return response
 
 
 CHART_DEFS = [
