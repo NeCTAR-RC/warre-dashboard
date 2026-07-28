@@ -153,6 +153,26 @@ class CreateViewTests(test.TestCase):
         self.assertEqual(20.0, context['percentage_used'])
 
     @test.create_mocks({api: ['limits', 'flavor_list']})
+    def test_get_context_data_zero_quota(self):
+        limits = {
+            'maxHours': 0,
+            'maxDays': 0,
+            'totalHoursUsed': 0,
+            'totalDaysUsed': 0,
+            'maxReservations': 0,
+            'totalReservationsUsed': 0,
+        }
+        self.mock_limits.return_value = limits
+        self.mock_flavor_list.return_value = []
+
+        view = views.CreateView()
+        view.request = self.request
+        view.kwargs = {}
+
+        context = view.get_context_data()
+        self.assertEqual(0, context['percentage_used'])
+
+    @test.create_mocks({api: ['limits', 'flavor_list']})
     def test_get_context_data_filters_empty_az_and_category(self):
         self.mock_limits.return_value = _limits_fixture()
         flavor_with_az = mock.Mock(availability_zone='melbourne-qh2',

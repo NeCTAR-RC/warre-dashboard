@@ -159,8 +159,11 @@ class CreateView(forms.ModalFormView):
         context = super().get_context_data(**kwargs)
         limits = api.limits(self.request)
         context['limits'] = limits
-        context['percentage_used'] = \
-            limits['totalHoursUsed'] / limits['maxHours'] * 100
+        if limits['maxHours']:
+            context['percentage_used'] = \
+                limits['totalHoursUsed'] / limits['maxHours'] * 100
+        else:
+            context['percentage_used'] = 0
         flavors = api.flavor_list(self.request)
         context['availability_zones'] = list(set(
             [f.availability_zone for f in flavors if f.availability_zone]))
